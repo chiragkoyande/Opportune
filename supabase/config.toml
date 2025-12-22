@@ -1,0 +1,13 @@
+project_id = "axmpybipjrmwjoyrhjni"
+
+[env]
+FIRECRAWL_API_KEY =fc-2441b71d0d9f4e9fb70594ee56ae3de4
+
+[functions.fetch-opportunities]
+verify_jwt = false
+
+[functions.generate-ideas]
+verify_jwt = false
+
+[functions.get-user-by-email]
+verify_jwt = true
