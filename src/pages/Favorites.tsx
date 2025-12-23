@@ -110,7 +110,7 @@ const Favorites = () => {
                         </Badge>
                         {daysUntilDeadline > 0 && daysUntilDeadline <= 5 && (
                           <Badge className="bg-urgent text-urgent-foreground">
-                            ⚡ {daysUntilDeadline} days left
+                            {daysUntilDeadline} days left
                           </Badge>
                         )}
                       </div>

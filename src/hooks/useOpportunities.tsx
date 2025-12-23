@@ -57,14 +57,14 @@ export const useOpportunities = () => {
 
       // Fetch from MULTIPLE live APIs to get maximum opportunities
       try {
-        console.log('🔄 Fetching from RELIABLE public APIs only...');
+        console.log('Fetching from RELIABLE public APIs only...');
         const liveOpportunities: Opportunity[] = [];
 
         // ===== PROVEN WORKING APIS ONLY =====
 
         // API 1: Codeforces - 100% RELIABLE (No auth needed)
         try {
-          console.log('📡 API 1: Codeforces Contests (RELIABLE)...');
+          console.log('API 1: Codeforces Contests (RELIABLE)...');
           const response = await fetch('https://codeforces.com/api/contest.list?gym=false');
           if (response.ok) {
             const data = await response.json();
@@ -86,16 +86,16 @@ export const useOpportunities = () => {
                     source: 'Codeforces (Live)',
                   });
                 });
-              console.log(`✅ Codeforces: ${data.result.filter((c: any) => c.phase === 'BEFORE').length} upcoming contests`);
+              console.log(`Codeforces: ${data.result.filter((c: any) => c.phase === 'BEFORE').length} upcoming contests`);
             }
           }
         } catch (e) {
-          console.warn('⚠️ Codeforces failed');
+          console.warn('Codeforces failed');
         }
 
         // API 2: AtCoder - 100% RELIABLE (No auth needed)
         try {
-          console.log('📡 API 2: AtCoder Contests (RELIABLE)...');
+          console.log('API 2: AtCoder Contests (RELIABLE)...');
           const response = await fetch('https://atcoder.jp/api/v2/contests?ratedType=all');
           if (response.ok) {
             const data = await response.json();
@@ -117,16 +117,16 @@ export const useOpportunities = () => {
                     source: 'AtCoder (Live)',
                   });
                 });
-              console.log(`✅ AtCoder: ${data.result.filter((c: any) => new Date(c.start_time) > new Date()).length} upcoming contests`);
+              console.log(`AtCoder: ${data.result.filter((c: any) => new Date(c.start_time) > new Date()).length} upcoming contests`);
             }
           }
         } catch (e) {
-          console.warn('⚠️ AtCoder failed');
+          console.warn('AtCoder failed');
         }
 
         // API 4: Unstop Hackathons (India's Major Platform - Curated List)
         try {
-          console.log('📡 API 4: Unstop Hackathons (CURATED)...');
+          console.log('API 4: Unstop Hackathons (CURATED)...');
           // Unstop has no public API, but is critical for India
           // Adding curated verified hackathons from Unstop platform
           const unstopHackathons = [
@@ -172,14 +172,14 @@ export const useOpportunities = () => {
           ];
           
           liveOpportunities.push(...unstopHackathons);
-          console.log(`✅ Unstop: Added ${unstopHackathons.length} verified hackathons`);
+          console.log(`Unstop: Added ${unstopHackathons.length} verified hackathons`);
         } catch (e) {
-          console.warn('⚠️ Unstop list failed');
+          console.warn('Unstop list failed');
         }
 
         // API 5: Devpost & MLH Global Hackathons
         try {
-          console.log('📡 API 5: Global Hackathon Directory...');
+          console.log('API 5: Global Hackathon Directory...');
           // Combining Devpost and MLH network hackathons
           const globalHackathons = [
             { title: 'MLH Hackathon Season 2025', location: 'Global', days: 45, org: 'MLH' },
@@ -201,14 +201,14 @@ export const useOpportunities = () => {
               source: `${hack.org} Directory`,
             });
           });
-          console.log(`✅ Global Hackathons: Added ${globalHackathons.length} major events`);
+          console.log(`Global Hackathons: Added ${globalHackathons.length} major events`);
         } catch (e) {
-          console.warn('⚠️ Global hackathons failed');
+          console.warn('Global hackathons failed');
         }
 
         // API 6: Tech Company Internships (RELIABLE)
         try {
-          console.log('📡 API 6: Tech Company Internships (RELIABLE)...');
+          console.log('API 6: Tech Company Internships (RELIABLE)...');
           const techOpps = [
             {
               id: 'google-internship-2025',
@@ -249,14 +249,14 @@ export const useOpportunities = () => {
           ];
           
           liveOpportunities.push(...techOpps);
-          console.log(`✅ Tech internships: ${techOpps.length} added`);
+          console.log(`Tech internships: ${techOpps.length} added`);
         } catch (e) {
-          console.warn('⚠️ Tech internships failed');
+          console.warn('Tech internships failed');
         }
 
         // API 7: Verified Major Hackathons (SIH, MLH)
         try {
-          console.log('📡 API 7: Verified Hackathon Events...');
+          console.log('API 7: Verified Hackathon Events...');
           const verifiedHackathons = [
             {
               id: 'sih-2025',
@@ -287,9 +287,9 @@ export const useOpportunities = () => {
           ];
           
           liveOpportunities.push(...verifiedHackathons);
-          console.log(`✅ Verified hackathons: ${verifiedHackathons.length} added`);
+          console.log(`Verified hackathons: ${verifiedHackathons.length} added`);
         } catch (e) {
-          console.warn('⚠️ Hackathons failed');
+          console.warn('Hackathons failed');
         }
 
         // Remove duplicates
@@ -306,9 +306,9 @@ export const useOpportunities = () => {
         combined.sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
 
         setOpportunities(combined);
-        console.log(`\n🎉🎉🎉 SUCCESS! Total: ${dbOpportunities.length} DB + ${uniqueLive.length} LIVE = ${combined.length} TOTAL 🎉🎉🎉`);
+        console.log(`\nSUCCESS! Total: ${dbOpportunities.length} DB + ${uniqueLive.length} LIVE = ${combined.length} TOTAL`);
       } catch (liveErr) {
-        console.error('❌ Error:', liveErr);
+        console.error('Error:', liveErr);
         setOpportunities(dbOpportunities);
       }
     } catch (err) {
