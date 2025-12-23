@@ -6,17 +6,6 @@ const corsHeaders = {
 // Simplified fetch-opportunities edge function
 // This fetches opportunities from external APIs and returns them
 
-interface KontestContest {
-  name: string;
-  url: string;
-  start_time: string;
-  end_time: string;
-  duration: string;
-  site: string;
-  in_24_hours: string;
-  status: string;
-}
-
 interface Opportunity {
   id: string;
   title: string;
@@ -197,60 +186,7 @@ Deno.serve(async (req) => {
     // Parallel fetch from multiple sources
     const fetchPromises: Promise<void>[] = [];
 
-    // 1. Fetch from Kontests API (Coding Contests) - Fast, reliable
-    fetchPromises.push(
-      (async () => {
-        try {
-          const kontestsResponse = await fetch('https://kontests.net/api/v1/all');
-          if (kontestsResponse.ok) {
-            const contests: KontestContest[] = await kontestsResponse.json();
-            
-            const upcomingContests = contests
-              .filter(c => c.status === 'BEFORE' || new Date(c.start_time) > new Date())
-              .slice(0, 15);
-
-            upcomingContests.forEach((contest, index) => {
-              const siteMap: Record<string, string> = {
-                'CodeForces': 'Codeforces',
-                'CodeForces::Gym': 'Codeforces Gym',
-                'TopCoder': 'TopCoder',
-                'AtCoder': 'AtCoder',
-                'CS Academy': 'CS Academy',
-                'CodeChef': 'CodeChef',
-                'HackerRank': 'HackerRank',
-                'HackerEarth': 'HackerEarth',
-                'LeetCode': 'LeetCode',
-                'Toph': 'Toph',
-              };
-
-              const tags = ['Competitive Programming'];
-              if (contest.site.toLowerCase().includes('codeforces')) tags.push('Algorithms');
-              if (contest.site.toLowerCase().includes('leetcode')) tags.push('DSA');
-              if (contest.site.toLowerCase().includes('atcoder')) tags.push('High Quality');
-              if (contest.site.toLowerCase().includes('codechef')) tags.push('Rated');
-
-              opportunities.push({
-                id: `contest-${index}`,
-                title: contest.name,
-                type: 'contest',
-                organization: siteMap[contest.site] || contest.site,
-                description: `Competitive programming contest on ${contest.site}. Duration: ${Math.round(parseInt(contest.duration) / 3600)} hours.`,
-                deadline: contest.start_time,
-                applyUrl: contest.url,
-                location: 'Virtual',
-                tags,
-                source: `${contest.site} (Live)`,
-              });
-            });
-            console.log(`Fetched ${upcomingContests.length} contests from Kontests API`);
-          }
-        } catch (error) {
-          console.error('Error fetching from Kontests API:', error);
-        }
-      })()
-    );
-
-    // 2. Scrape hackathons using Firecrawl if API key is available
+    // Scrape hackathons using Firecrawl if API key is available
     if (firecrawlApiKey) {
       // Scrape multiple hackathon platforms in parallel
       const scrapeQueries = [
@@ -355,7 +291,7 @@ Deno.serve(async (req) => {
         success: true, 
         data: uniqueOpportunities,
         scrapedAt: new Date().toISOString(),
-        sources: firecrawlApiKey ? ['Kontests API', 'Firecrawl Web Scraping'] : ['Kontests API', 'Curated Data']
+        sources: firecrawlApiKey ? ['Firecrawl Web Scraping'] : ['Curated Data']
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

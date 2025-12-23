@@ -6,6 +6,10 @@ A comprehensive platform for discovering and comparing tech opportunities includ
 
 Opportunity Compass aggregates opportunities from 8 reliable data sources and presents them through an intuitive, modern interface. Users can browse, filter, compare, and save their favorite opportunities to a personalized list. The platform supports user authentication, profile management, and administrative features for opportunity curation.
 
+## Demo
+
+[![Watch the demo](https://img.shields.io/badge/Watch-Demo-blue?logo=youtube)](YOUR_YOUTUBE_URL_HERE)
+
 ## Features
 
 ### Core Functionality
@@ -30,15 +34,14 @@ Opportunity Compass aggregates opportunities from 8 reliable data sources and pr
 - System monitoring tools
 
 ### Data Sources
-The platform integrates with 8 verified opportunity sources:
+The platform integrates with 7 verified opportunity sources:
 1. **Codeforces** - Programming contests (99.9% uptime)
 2. **AtCoder** - Japanese programming contests (99.9% uptime)
-3. **Kontests Aggregator** - 50+ competition platforms aggregated (99.8% uptime)
-4. **GitHub** - 5 curated tech opportunities
-5. **Unstop Hackathons** - 3 verified Indian hackathons (BuildIt, CodeFest, Innovation Challenge)
-6. **Global Hackathons** - Devpost and MLH network events
-7. **Tech Internships** - Google, Microsoft, Amazon internship programs
-8. **Verified Events** - SIH, MLH, and international certifications
+3. **GitHub** - Open source opportunities
+4. **Unstop Hackathons** - 3 verified Indian hackathons (BuildIt, CodeFest, Innovation Challenge)
+5. **Global Hackathons** - Devpost and MLH network events
+6. **Tech Internships** - Google, Microsoft, Amazon internship programs
+7. **Verified Events** - SIH, MLH, and international certifications
 
 ## Technology Stack
 
@@ -251,11 +254,11 @@ Access: `/admin` route (requires admin privileges)
 
 The `useOpportunities` hook handles all data aggregation:
 
-1. Fetches from 8 independent sources simultaneously
+1. Fetches from 7 independent sources simultaneously
 2. Deduplicates opportunities by normalized title comparison
 3. Sorts results by deadline (ascending)
 4. Falls back to database-only data if live APIs fail
-5. Returns combined array of 73-88 opportunities
+5. Returns combined array of opportunities
 
 ### API Sources
 
@@ -271,12 +274,7 @@ All data sources are publicly available with no authentication required:
 - Provides: Japanese programming contests
 - Uptime: 99.9%
 
-**API 3: Kontests Aggregator**
-- Endpoint: `https://kontests.net/api/v1/all`
-- Provides: 50+ platform aggregation
-- Uptime: 99.8%
-
-**API 4-8: Verified Lists**
+**API 3-7: Verified Lists**
 - Sources: GitHub, Unstop (curated), Devpost, official internship programs
 - Format: Hardcoded verified opportunities
 - Reliability: 100% (no external API dependency)

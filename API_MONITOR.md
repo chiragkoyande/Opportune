@@ -12,7 +12,6 @@ Press **F12** (or Right-click → Inspect → Console)
 ```
 ✅ Codeforces: X upcoming contests
 ✅ AtCoder: X upcoming contests  
-✅ Kontests: X upcoming contests from 50+ platforms
 ✅ GitHub: X opportunities
 ✅ Devpost: Added X major hackathons
 ✅ Tech internships: X added
@@ -38,12 +37,6 @@ Press **F12** (or Right-click → Inspect → Console)
 - **Status Check**: Console shows `✅ AtCoder: X upcoming contests`
 - **Expected**: 5-12 contests
 - **Why it works**: Official free API
-
-### 🎪 Kontests Aggregator
-- **What**: Aggregates 50+ platforms (Codeforces, CodeChef, HackerRank, Codewars, etc.)
-- **Status Check**: Console shows `✅ Kontests: X upcoming contests from 50+ platforms`
-- **Expected**: 15-30 contests
-- **Why it works**: Specifically built for this purpose
 
 ### 🐙 GitHub API
 - **What**: Open source project opportunities
@@ -102,7 +95,6 @@ Track these numbers to ensure everything's working:
 |-----|---|---|
 | Codeforces | 8-20 | ✅ ALWAYS WORKS |
 | AtCoder | 5-12 | ✅ ALWAYS WORKS |
-| Kontests | 15-30 | ✅ ALWAYS WORKS |
 | GitHub | 5 | ✅ ALWAYS WORKS |
 | Hackathons | 2-3 | ✅ ALWAYS WORKS |
 | Internships | 3 | ✅ ALWAYS WORKS |
@@ -170,10 +162,6 @@ Check your Vercel/Netlify logs for:
 ---
 
 ## Emergency Response
-
-**If Kontests goes down** (very unlikely):
-- Codeforces + AtCoder will still provide 25-30 contests
-- Total opportunities drops to ~50-60 (still healthy)
 
 **If any other API fails:**
 - Others automatically compensate

@@ -124,68 +124,9 @@ export const useOpportunities = () => {
           console.warn('⚠️ AtCoder failed');
         }
 
-        // API 3: Kontests Aggregator - 100% RELIABLE (Aggregates 50+ platforms)
+        // API 4: Unstop Hackathons (India's Major Platform - Curated List)
         try {
-          console.log('📡 API 3: Kontests Aggregator (RELIABLE)...');
-          const response = await fetch('https://kontests.net/api/v1/all');
-          if (response.ok) {
-            const contests = await response.json();
-            if (Array.isArray(contests)) {
-              contests
-                .filter((c: any) => c.status === 'BEFORE' && new Date(c.start_time) > new Date())
-                .slice(0, 15)
-                .forEach((contest: any, idx: number) => {
-                  liveOpportunities.push({
-                    id: `kontests-${idx}`,
-                    title: contest.name?.substring(0, 100) || 'Contest',
-                    type: 'contest',
-                    organization: contest.site || 'Kontests',
-                    description: `${contest.site} - Competitive programming`,
-                    deadline: new Date(contest.start_time),
-                    applyUrl: contest.url || '#',
-                    location: 'Virtual',
-                    tags: ['Live', contest.site || 'Contest'],
-                    source: `${contest.site} (via Kontests)`,
-                  });
-                });
-              console.log(`✅ Kontests: ${contests.filter((c: any) => c.status === 'BEFORE').length} upcoming contests from 50+ platforms`);
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Kontests failed');
-        }
-
-        // API 4: GitHub Jobs API - For internships/jobs
-        try {
-          console.log('📡 API 4: GitHub Jobs (RELIABLE)...');
-          const response = await fetch('https://api.github.com/search/repositories?q=stars:>100&sort=stars&order=desc&per_page=5');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.items && data.items.length > 0) {
-              data.items.slice(0, 5).forEach((repo: any, idx: number) => {
-                liveOpportunities.push({
-                  id: `github-${idx}`,
-                  title: `${repo.name} - Open Source Opportunity`,
-                  type: 'internship',
-                  organization: repo.owner?.login || 'GitHub Community',
-                  description: repo.description?.substring(0, 150) || 'Open source project contribution opportunity',
-                  deadline: new Date(Date.now() + 365 * 86400000), // No deadline
-                  applyUrl: repo.html_url || '#',
-                  location: 'Remote',
-                  tags: ['Live', 'OpenSource', 'Remote'],
-                  source: 'GitHub (Live)',
-                });
-              });
-              console.log(`✅ GitHub: ${data.items.length} opportunities`);
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ GitHub failed');
-        }
-
-        // API 5: Unstop Hackathons (India's Major Platform - Curated List)
-        try {
-          console.log('📡 API 5: Unstop Hackathons (CURATED)...');
+          console.log('📡 API 4: Unstop Hackathons (CURATED)...');
           // Unstop has no public API, but is critical for India
           // Adding curated verified hackathons from Unstop platform
           const unstopHackathons = [
@@ -236,9 +177,9 @@ export const useOpportunities = () => {
           console.warn('⚠️ Unstop list failed');
         }
 
-        // API 6: Devpost & MLH Global Hackathons
+        // API 5: Devpost & MLH Global Hackathons
         try {
-          console.log('📡 API 6: Global Hackathon Directory...');
+          console.log('📡 API 5: Global Hackathon Directory...');
           // Combining Devpost and MLH network hackathons
           const globalHackathons = [
             { title: 'MLH Hackathon Season 2025', location: 'Global', days: 45, org: 'MLH' },
@@ -265,9 +206,9 @@ export const useOpportunities = () => {
           console.warn('⚠️ Global hackathons failed');
         }
 
-        // API 7: Tech Company Internships (RELIABLE)
+        // API 6: Tech Company Internships (RELIABLE)
         try {
-          console.log('📡 API 7: Tech Company Internships (RELIABLE)...');
+          console.log('📡 API 6: Tech Company Internships (RELIABLE)...');
           const techOpps = [
             {
               id: 'google-internship-2025',
@@ -313,9 +254,9 @@ export const useOpportunities = () => {
           console.warn('⚠️ Tech internships failed');
         }
 
-        // API 8: Verified Major Hackathons (SIH, MLH)
+        // API 7: Verified Major Hackathons (SIH, MLH)
         try {
-          console.log('📡 API 8: Verified Hackathon Events...');
+          console.log('📡 API 7: Verified Hackathon Events...');
           const verifiedHackathons = [
             {
               id: 'sih-2025',
