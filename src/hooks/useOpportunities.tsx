@@ -104,7 +104,7 @@ export const useOpportunities = () => {
         if (response.ok) {
           const data = await response.json();
           if (data?.status === 'success' && data.future_contests) {
-            data.future_contests.slice(0, 8).forEach((contest: any) => {
+            data.future_contests.slice(0, 10).forEach((contest: any) => {
               liveOpportunities.push({
                 id: `codechef-${contest.contest_code}`,
                 title: contest.contest_name,
@@ -122,6 +122,38 @@ export const useOpportunities = () => {
         }
       } catch {
         console.warn('CodeChef fetch failed');
+      }
+
+      /* ---------- API 3: HackerEarth (LIVE - Indian Hackathons) ---------- */
+      try {
+        console.log('API: HackerEarth Events');
+        const response = await fetch('https://www.hackerearth.com/api/events/upcoming/');
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.response && Array.isArray(data.response)) {
+            data.response.forEach((event: any, idx: number) => {
+              const isHackathon = event.challenge_type?.toLowerCase().includes('hackathon') ||
+                event.url?.includes('hackathon');
+
+              liveOpportunities.push({
+                id: `hackerearth-${idx}-${Date.now()}`,
+                title: event.title,
+                type: isHackathon ? 'hackathon' : 'contest',
+                organization: 'HackerEarth',
+                description: event.description?.replace(/<[^>]*>/g, '').substring(0, 150) + '...' || 'HackerEarth Challenge',
+                deadline: new Date(event.end_tz),
+                applyUrl: event.url,
+                location: 'Virtual / India',
+                tags: ['HackerEarth', event.challenge_type || 'Challenge', 'India'],
+                source: 'HackerEarth (Live)',
+              });
+            });
+            console.log(`HackerEarth: Found ${data.response.length} events`);
+          }
+        }
+      } catch {
+        console.warn('HackerEarth fetch failed');
       }
 
       /* ---------- Curated Hackathons ---------- */
@@ -278,6 +310,288 @@ export const useOpportunities = () => {
       ];
 
       liveOpportunities.push(...curatedInternships);
+
+      /* ---------- More Indian Hackathons & Opportunities ---------- */
+      const moreIndianOpportunities: Opportunity[] = [
+        // Unstop Hackathons
+        {
+          id: 'unstop-codefest-2025',
+          title: 'CodeFest 2025 - Unstop',
+          type: 'hackathon',
+          organization: 'Unstop',
+          description: 'National level coding hackathon with prizes worth ₹3 Lakhs',
+          deadline: new Date(Date.now() + 30 * 86400000),
+          applyUrl: 'https://unstop.com/hackathons',
+          location: 'India / Virtual',
+          prize: '₹3,00,000',
+          tags: ['Unstop', 'Coding', 'India'],
+          source: 'Unstop',
+        },
+        {
+          id: 'unstop-innovate-2025',
+          title: 'Innovation Challenge 2025',
+          type: 'hackathon',
+          organization: 'Unstop',
+          description: 'Showcase your innovative ideas and win exciting prizes',
+          deadline: new Date(Date.now() + 45 * 86400000),
+          applyUrl: 'https://unstop.com/hackathons',
+          location: 'India',
+          prize: '₹2,00,000',
+          tags: ['Innovation', 'India', 'Startup'],
+          source: 'Unstop',
+        },
+        {
+          id: 'unstop-techathon-2025',
+          title: 'Techathon 2025',
+          type: 'hackathon',
+          organization: 'Unstop',
+          description: 'Build solutions for real-world problems',
+          deadline: new Date(Date.now() + 60 * 86400000),
+          applyUrl: 'https://unstop.com/hackathons',
+          location: 'India / Virtual',
+          prize: '₹1,50,000',
+          tags: ['Tech', 'India', 'Problem Solving'],
+          source: 'Unstop',
+        },
+        // College Hackathons
+        {
+          id: 'iit-bombay-techfest',
+          title: 'IIT Bombay Techfest 2025',
+          type: 'hackathon',
+          organization: 'IIT Bombay',
+          description: 'Asia\'s largest science and technology festival',
+          deadline: new Date('2025-01-20'),
+          applyUrl: 'https://techfest.org/',
+          location: 'Mumbai, India',
+          prize: '₹10,00,000+',
+          tags: ['IIT', 'Techfest', 'Mumbai'],
+          source: 'IIT Bombay',
+        },
+        {
+          id: 'iit-delhi-tryst',
+          title: 'Tryst IIT Delhi 2025',
+          type: 'hackathon',
+          organization: 'IIT Delhi',
+          description: 'Annual technical festival with multiple competitions',
+          deadline: new Date('2025-02-15'),
+          applyUrl: 'https://tryst-iitd.org/',
+          location: 'New Delhi, India',
+          prize: '₹5,00,000+',
+          tags: ['IIT', 'Delhi', 'Tech Fest'],
+          source: 'IIT Delhi',
+        },
+        {
+          id: 'bits-apogee',
+          title: 'BITS Pilani Apogee 2025',
+          type: 'hackathon',
+          organization: 'BITS Pilani',
+          description: 'Technical festival featuring hackathons and coding contests',
+          deadline: new Date('2025-03-10'),
+          applyUrl: 'https://bits-apogee.org/',
+          location: 'Pilani, India',
+          prize: '₹3,00,000+',
+          tags: ['BITS', 'Apogee', 'Rajasthan'],
+          source: 'BITS Pilani',
+        },
+        {
+          id: 'nit-trichy-pragyan',
+          title: 'Pragyan NIT Trichy 2025',
+          type: 'hackathon',
+          organization: 'NIT Trichy',
+          description: 'ISO certified technical festival of South India',
+          deadline: new Date('2025-02-28'),
+          applyUrl: 'https://pragyan.org/',
+          location: 'Trichy, India',
+          prize: '₹2,00,000+',
+          tags: ['NIT', 'Pragyan', 'Tamil Nadu'],
+          source: 'NIT Trichy',
+        },
+        // Corporate Hackathons India
+        {
+          id: 'tcs-codevita',
+          title: 'TCS CodeVita 2025',
+          type: 'contest',
+          organization: 'TCS',
+          description: 'World\'s largest programming competition with job offers',
+          deadline: new Date('2025-03-31'),
+          applyUrl: 'https://www.tcscodevita.com/',
+          location: 'Virtual / India',
+          prize: '$20,000+',
+          tags: ['TCS', 'Jobs', 'Coding'],
+          source: 'TCS',
+        },
+        {
+          id: 'infosys-hackwithinfy',
+          title: 'HackWithInfy 2025',
+          type: 'hackathon',
+          organization: 'Infosys',
+          description: 'Coding contest for engineering students with PPO opportunities',
+          deadline: new Date('2025-04-30'),
+          applyUrl: 'https://www.infosys.com/careers/hackwithinfy.html',
+          location: 'Virtual / India',
+          prize: '₹2,00,000 + PPO',
+          tags: ['Infosys', 'Jobs', 'Coding'],
+          source: 'Infosys',
+        },
+        {
+          id: 'flipkart-grid',
+          title: 'Flipkart GRiD 6.0',
+          type: 'hackathon',
+          organization: 'Flipkart',
+          description: 'E-commerce challenge with pre-placement interviews',
+          deadline: new Date('2025-05-15'),
+          applyUrl: 'https://unstop.com/hackathons/flipkart-grid',
+          location: 'Virtual / Bangalore',
+          prize: '₹3,00,000 + Internship',
+          tags: ['Flipkart', 'E-commerce', 'PPO'],
+          source: 'Flipkart',
+        },
+        {
+          id: 'amazon-ml-challenge',
+          title: 'Amazon ML Challenge 2025',
+          type: 'contest',
+          organization: 'Amazon',
+          description: 'Machine learning competition for students',
+          deadline: new Date('2025-06-01'),
+          applyUrl: 'https://www.hackerearth.com/challenges/competitive/amazon-ml-challenge/',
+          location: 'Virtual',
+          prize: '₹5,00,000 + Internship',
+          tags: ['Amazon', 'ML', 'AI'],
+          source: 'Amazon',
+        },
+        {
+          id: 'microsoft-engage',
+          title: 'Microsoft Engage 2025',
+          type: 'internship',
+          organization: 'Microsoft India',
+          description: 'Mentorship program for engineering students',
+          deadline: new Date('2025-05-20'),
+          applyUrl: 'https://microsoft.acehacker.com/engage/',
+          location: 'Virtual / India',
+          prize: 'Internship + Mentorship',
+          tags: ['Microsoft', 'Internship', 'Mentorship'],
+          source: 'Microsoft India',
+        },
+        {
+          id: 'google-kickstart',
+          title: 'Google Coding Competitions',
+          type: 'contest',
+          organization: 'Google',
+          description: 'Algorithmic competitions to test your coding skills',
+          deadline: new Date('2025-04-15'),
+          applyUrl: 'https://codingcompetitions.withgoogle.com/',
+          location: 'Virtual',
+          prize: 'Prizes + Job Opportunities',
+          tags: ['Google', 'Algorithms', 'Global'],
+          source: 'Google',
+        },
+        // Indian Internships
+        {
+          id: 'swoc-2025',
+          title: 'Social Winter of Code 2025',
+          type: 'internship',
+          organization: 'Script Foundation',
+          description: 'Open source program for students to contribute to projects',
+          deadline: new Date('2025-02-28'),
+          applyUrl: 'https://swoc.tech/',
+          location: 'Remote / India',
+          prize: 'Certificates + Swags',
+          tags: ['Open Source', 'Winter', 'India'],
+          source: 'SWOC',
+        },
+        {
+          id: 'gssoc-2025',
+          title: 'GirlScript Summer of Code 2025',
+          type: 'internship',
+          organization: 'GirlScript Foundation',
+          description: '3-month open source program focused on beginners',
+          deadline: new Date('2025-03-15'),
+          applyUrl: 'https://gssoc.girlscript.tech/',
+          location: 'Remote / India',
+          prize: 'Certificates + Goodies',
+          tags: ['Open Source', 'Beginner', 'India'],
+          source: 'GirlScript',
+        },
+        {
+          id: 'kwoc-2025',
+          title: 'Kharagpur Winter of Code 2025',
+          type: 'internship',
+          organization: 'IIT Kharagpur',
+          description: 'Open source contribution program by KOSS IIT KGP',
+          deadline: new Date('2025-01-31'),
+          applyUrl: 'https://kwoc.kossiitkgp.org/',
+          location: 'Remote / India',
+          prize: 'Certificates + Swags',
+          tags: ['IIT', 'Open Source', 'Kharagpur'],
+          source: 'IIT Kharagpur',
+        },
+        // More Contests
+        {
+          id: 'leetcode-weekly',
+          title: 'LeetCode Weekly Contests',
+          type: 'contest',
+          organization: 'LeetCode',
+          description: 'Weekly algorithmic contests - Every Sunday',
+          deadline: new Date(Date.now() + 7 * 86400000),
+          applyUrl: 'https://leetcode.com/contest/',
+          location: 'Virtual',
+          tags: ['LeetCode', 'Weekly', 'Algorithms'],
+          source: 'LeetCode',
+        },
+        {
+          id: 'atcoder-beginner',
+          title: 'AtCoder Beginner Contest',
+          type: 'contest',
+          organization: 'AtCoder',
+          description: 'Weekly beginner-friendly programming contest',
+          deadline: new Date(Date.now() + 5 * 86400000),
+          applyUrl: 'https://atcoder.jp/contests/',
+          location: 'Virtual',
+          tags: ['AtCoder', 'Beginner', 'Japan'],
+          source: 'AtCoder',
+        },
+        {
+          id: 'hackerrank-week',
+          title: 'HackerRank Week of Code',
+          type: 'contest',
+          organization: 'HackerRank',
+          description: 'Multi-day algorithmic competition',
+          deadline: new Date(Date.now() + 14 * 86400000),
+          applyUrl: 'https://www.hackerrank.com/contests',
+          location: 'Virtual',
+          tags: ['HackerRank', 'Algorithms', 'Multi-day'],
+          source: 'HackerRank',
+        },
+        // Tech Community Events
+        {
+          id: 'devfolio-hackathon',
+          title: 'Devfolio Weekend Hackathons',
+          type: 'hackathon',
+          organization: 'Devfolio',
+          description: 'Community hackathons happening every weekend across India',
+          deadline: new Date(Date.now() + 10 * 86400000),
+          applyUrl: 'https://devfolio.co/hackathons',
+          location: 'India / Virtual',
+          prize: 'Varies',
+          tags: ['Devfolio', 'Weekend', 'Community'],
+          source: 'Devfolio',
+        },
+        {
+          id: 'mlh-local-hack',
+          title: 'MLH Local Hack Day',
+          type: 'hackathon',
+          organization: 'MLH',
+          description: 'Build projects in your local community',
+          deadline: new Date(Date.now() + 20 * 86400000),
+          applyUrl: 'https://localhackday.mlh.io/',
+          location: 'Multiple Cities',
+          prize: 'Swags + Prizes',
+          tags: ['MLH', 'Local', 'Community'],
+          source: 'MLH',
+        },
+      ];
+
+      liveOpportunities.push(...moreIndianOpportunities);
 
       /* ===============================
          3️⃣ MERGE + SORT
