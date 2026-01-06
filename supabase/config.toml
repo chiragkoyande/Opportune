@@ -1,7 +1,4 @@
-project_id = "axmpybipjrmwjoyrhjni"
-
-[env]
-FIRECRAWL_API_KEY =fc-2441b71d0d9f4e9fb70594ee56ae3de4
+project_id = "bamhgnsilycmlvzmvbth"
 
 [functions.fetch-opportunities]
 verify_jwt = false
