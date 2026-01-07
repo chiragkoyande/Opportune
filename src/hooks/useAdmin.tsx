@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+// Primary admin emails that always have admin access
+const ADMIN_EMAILS = [
+  'chiragkoyande4@gmail.com',
+];
+
 export const useAdmin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,7 +33,15 @@ export const useAdmin = () => {
       }
 
       try {
-        console.log('Checking admin status for user:', user.id);
+        // Check if user's email is in the primary admin list
+        if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+          checkedUserId.current = user.id;
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
+
+        // Otherwise check the user_roles table
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -36,15 +49,11 @@ export const useAdmin = () => {
           .eq('role', 'admin')
           .maybeSingle();
 
-        console.log('Admin check result:', { data, error });
         if (error) throw error;
-        
+
         checkedUserId.current = user.id;
-        const adminStatus = !!data;
-        console.log('Setting isAdmin to:', adminStatus);
-        setIsAdmin(adminStatus);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
+        setIsAdmin(!!data);
+      } catch {
         setIsAdmin(false);
       } finally {
         setLoading(false);

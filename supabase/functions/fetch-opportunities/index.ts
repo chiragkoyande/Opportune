@@ -38,10 +38,10 @@ async function scrapeHackathonsFromPlatform(
   source: string
 ): Promise<Opportunity[]> {
   const opportunities: Opportunity[] = [];
-  
+
   try {
     console.log(`Searching for hackathons: ${searchQuery}`);
-    
+
     // Use Firecrawl search to find hackathons
     const response = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -73,17 +73,17 @@ async function scrapeHackathonsFromPlatform(
         const title = result.title || `Hackathon from ${source}`;
         const description = result.description || result.markdown?.substring(0, 200) || 'Join this exciting hackathon opportunity!';
         const url = result.url || '';
-        
+
         // Extract date from markdown content if available
         let deadline = new Date(Date.now() + (index + 1) * 7 * 24 * 60 * 60 * 1000).toISOString();
-        
+
         // Try to extract date patterns from content
         const datePatterns = [
           /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
           /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i,
           /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
         ];
-        
+
         const content = result.markdown || result.description || '';
         for (const pattern of datePatterns) {
           const match = content.match(pattern);
@@ -190,11 +190,13 @@ Deno.serve(async (req) => {
     if (firecrawlApiKey) {
       // Scrape multiple hackathon platforms in parallel
       const scrapeQueries = [
-        { query: 'upcoming hackathons 2025 registration open', source: 'Web Search' },
-        { query: 'MLH hackathons 2025 students apply', source: 'MLH' },
-        { query: 'Devpost hackathons online submissions open', source: 'Devpost' },
-        { query: 'Devfolio hackathons India 2025 apply', source: 'Devfolio' },
-        { query: 'Unstop hackathons competitions 2025', source: 'Unstop' },
+        { query: 'upcoming hackathons 2026 registration open', source: 'Web Search' },
+        { query: 'MLH hackathons 2026 students apply', source: 'MLH' },
+        { query: 'Devpost hackathons online submissions open 2026', source: 'Devpost' },
+        { query: 'Devfolio hackathons India 2026 apply', source: 'Devfolio' },
+        { query: 'Unstop hackathons competitions 2026 India', source: 'Unstop' },
+        { query: 'internships 2026 tech students India apply', source: 'Internships' },
+        { query: 'coding contests 2026 competitive programming', source: 'Contests' },
       ];
 
       for (const { query, source } of scrapeQueries) {
@@ -207,16 +209,16 @@ Deno.serve(async (req) => {
       }
     } else {
       console.log('FIRECRAWL_API_KEY not set, using curated data only');
-      
+
       // Fallback curated hackathons
       const curatedHackathons: Opportunity[] = [
         {
           id: 'hackathon-1',
-          title: 'MLH Global Hack Week',
+          title: 'MLH Global Hack Week 2026',
           type: 'hackathon',
           organization: 'Major League Hacking',
           description: 'A week-long celebration of building, learning, and sharing. Perfect for beginners and experienced hackers alike.',
-          deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           applyUrl: 'https://ghw.mlh.io/',
           location: 'Virtual',
           prize: '$10,000',
@@ -225,11 +227,11 @@ Deno.serve(async (req) => {
         },
         {
           id: 'hackathon-2',
-          title: 'ETHIndia 2025',
+          title: 'ETHIndia 2026',
           type: 'hackathon',
           organization: 'Devfolio',
           description: "Asia's largest Ethereum hackathon. Build the future of Web3 with 2000+ developers.",
-          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
           applyUrl: 'https://ethindia.co/',
           location: 'Bangalore, India',
           prize: '$50,000',
@@ -238,11 +240,11 @@ Deno.serve(async (req) => {
         },
         {
           id: 'hackathon-3',
-          title: 'HackMIT 2025',
+          title: 'HackMIT 2026',
           type: 'hackathon',
           organization: 'MIT',
           description: 'One of the largest and most prestigious collegiate hackathons in the world.',
-          deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           applyUrl: 'https://hackmit.org/',
           location: 'Cambridge, MA',
           prize: '$25,000',
@@ -251,11 +253,11 @@ Deno.serve(async (req) => {
         },
         {
           id: 'hackathon-4',
-          title: 'Smart India Hackathon 2025',
+          title: 'Smart India Hackathon 2026',
           type: 'hackathon',
           organization: 'Government of India',
           description: 'India\'s largest open innovation model to solve problems faced by government ministries.',
-          deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+          deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
           applyUrl: 'https://sih.gov.in/',
           location: 'India (Multiple Cities)',
           prize: '₹1,00,000',
@@ -269,11 +271,18 @@ Deno.serve(async (req) => {
     // Wait for all fetch operations to complete
     await Promise.all(fetchPromises);
 
+    // Filter out past events - only keep live and future opportunities
+    const now = new Date();
+    const futureOpportunities = opportunities.filter(opp => {
+      const deadline = new Date(opp.deadline);
+      return deadline >= now;
+    });
+
     // Remove duplicates based on title similarity
     const uniqueOpportunities: Opportunity[] = [];
     const seenTitles = new Set<string>();
-    
-    for (const opp of opportunities) {
+
+    for (const opp of futureOpportunities) {
       const normalizedTitle = opp.title.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!seenTitles.has(normalizedTitle)) {
         seenTitles.add(normalizedTitle);
@@ -287,8 +296,8 @@ Deno.serve(async (req) => {
     console.log(`Total unique opportunities: ${uniqueOpportunities.length}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         data: uniqueOpportunities,
         scrapedAt: new Date().toISOString(),
         sources: firecrawlApiKey ? ['Firecrawl Web Scraping'] : ['Curated Data']

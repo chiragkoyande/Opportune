@@ -3,6 +3,7 @@ import { Opportunity, OpportunityType } from '@/types/opportunity';
 import OpportunityCard from './OpportunityCard';
 import FilterTabs from './FilterTabs';
 import ScrollReveal from './ScrollReveal';
+import LoadingSkeletons from './LoadingSkeletons';
 import { Search, Loader2, RefreshCw, AlertCircle, Sparkles, SlidersHorizontal, X, Calendar, MapPin, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,17 +48,17 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
 
   const filteredOpportunities = useMemo(() => {
     const now = new Date();
-    
+
     return opportunities.filter((opp) => {
       // Type filter
       const matchesFilter = activeFilter === 'all' || opp.type === activeFilter;
-      
+
       // Search filter
-      const matchesSearch = searchQuery === '' || 
+      const matchesSearch = searchQuery === '' ||
         opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         opp.organization.toLowerCase().includes(searchQuery.toLowerCase()) ||
         opp.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+
       // Deadline filter
       let matchesDeadline = true;
       if (deadlineFilter !== 'all') {
@@ -74,12 +75,12 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
             break;
         }
       }
-      
+
       // Location filter
-      const matchesLocation = locationFilter === 'all' || 
+      const matchesLocation = locationFilter === 'all' ||
         opp.location?.toLowerCase() === locationFilter.toLowerCase() ||
         (locationFilter === 'remote' && opp.location?.toLowerCase().includes('remote'));
-      
+
       return matchesFilter && matchesSearch && matchesDeadline && matchesLocation;
     });
   }, [opportunities, activeFilter, searchQuery, deadlineFilter, locationFilter]);
@@ -117,7 +118,7 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
     <section id="opportunities" className="py-16 md:py-24 relative">
       {/* Background accent */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
-      
+
       <div className="container relative">
         {/* Section Header */}
         <div className="mb-12 text-center">
@@ -310,22 +311,22 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
           <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
         </div>
 
-        {/* Loading State */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="relative">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-primary" />
-            </div>
-            <p className="mt-6 text-muted-foreground">Fetching live opportunities...</p>
-          </div>
+        {/* Loading State - Show engaging skeleton cards with tips */}
+        {loading && opportunities.length === 0 ? (
+          <LoadingSkeletons count={6} showTips={true} />
         ) : (
           <>
-            {/* Results Count */}
+            {/* Results Count with loading more indicator */}
             <div className="mb-8 text-center">
               <p className="text-sm text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{sortedOpportunities.length}</span> 
+                Showing <span className="font-semibold text-foreground">{sortedOpportunities.length}</span>
                 {activeFilter !== 'all' && <span className="text-primary"> {activeFilter}</span>} opportunities
+                {loading && opportunities.length > 0 && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-primary animate-pulse">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading more...
+                  </span>
+                )}
               </p>
             </div>
 
@@ -339,7 +340,7 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
                   const col = index % cols;
                   // Wave delay: items in same row animate left to right, each row starts after previous
                   const waveDelay = (row * 150) + (col * 100);
-                  
+
                   return (
                     <ScrollReveal
                       key={opportunity.id}
