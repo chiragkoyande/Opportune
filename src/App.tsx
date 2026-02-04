@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { Loader2 } from "lucide-react";
+import BackgroundElements from "@/components/BackgroundElements";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -37,6 +38,8 @@ const PageLoader = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      {/* Global floating background elements */}
+      <BackgroundElements />
       <TooltipProvider>
         <Toaster />
         <Sonner />

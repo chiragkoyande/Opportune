@@ -10,11 +10,10 @@ import {
     Zap,
     GitBranch,
     Coffee,
-    Bug,
-    Database,
+    Hash,
     Cpu,
-    Wifi,
-    Binary
+    Globe,
+    Sparkles
 } from 'lucide-react';
 
 interface FloatingIcon {
@@ -25,71 +24,99 @@ interface FloatingIcon {
     size: number;
     duration: number;
     delay: number;
-    opacity: number;
-    rotate: number;
+    color: string;
 }
 
-// Pre-defined floating icons for coding/hackathon theme
+// Pre-defined floating icons for coding/hackathon theme - more visible now
 const floatingIcons: FloatingIcon[] = [
-    { id: 1, Icon: Code2, x: 5, y: 15, size: 24, duration: 20, delay: 0, opacity: 0.15, rotate: -15 },
-    { id: 2, Icon: Terminal, x: 85, y: 10, size: 28, duration: 25, delay: -5, opacity: 0.12, rotate: 10 },
-    { id: 3, Icon: Braces, x: 15, y: 75, size: 22, duration: 22, delay: -8, opacity: 0.18, rotate: -8 },
-    { id: 4, Icon: Laptop, x: 90, y: 65, size: 26, duration: 18, delay: -3, opacity: 0.14, rotate: 5 },
-    { id: 5, Icon: Rocket, x: 50, y: 5, size: 30, duration: 24, delay: -10, opacity: 0.2, rotate: 45 },
-    { id: 6, Icon: Trophy, x: 75, y: 85, size: 24, duration: 20, delay: -2, opacity: 0.16, rotate: -12 },
-    { id: 7, Icon: Lightbulb, x: 10, y: 45, size: 20, duration: 26, delay: -7, opacity: 0.15, rotate: 15 },
-    { id: 8, Icon: Zap, x: 92, y: 35, size: 22, duration: 19, delay: -4, opacity: 0.18, rotate: -20 },
-    { id: 9, Icon: GitBranch, x: 25, y: 90, size: 24, duration: 23, delay: -6, opacity: 0.13, rotate: 8 },
-    { id: 10, Icon: Coffee, x: 70, y: 20, size: 20, duration: 21, delay: -9, opacity: 0.12, rotate: -5 },
-    { id: 11, Icon: Bug, x: 40, y: 80, size: 18, duration: 28, delay: -1, opacity: 0.1, rotate: 25 },
-    { id: 12, Icon: Database, x: 60, y: 50, size: 22, duration: 17, delay: -11, opacity: 0.08, rotate: -10 },
-    { id: 13, Icon: Cpu, x: 3, y: 60, size: 26, duration: 25, delay: -12, opacity: 0.14, rotate: 0 },
-    { id: 14, Icon: Wifi, x: 80, y: 45, size: 20, duration: 22, delay: -8, opacity: 0.1, rotate: 12 },
-    { id: 15, Icon: Binary, x: 35, y: 25, size: 18, duration: 30, delay: -5, opacity: 0.08, rotate: -18 },
+    { id: 1, Icon: Code2, x: 5, y: 12, size: 32, duration: 12, delay: 0, color: 'text-hackathon' },
+    { id: 2, Icon: Terminal, x: 88, y: 8, size: 36, duration: 15, delay: -3, color: 'text-primary' },
+    { id: 3, Icon: Braces, x: 12, y: 70, size: 28, duration: 14, delay: -5, color: 'text-internship' },
+    { id: 4, Icon: Laptop, x: 92, y: 60, size: 34, duration: 13, delay: -2, color: 'text-contest' },
+    { id: 5, Icon: Rocket, x: 50, y: 5, size: 40, duration: 16, delay: -7, color: 'text-hackathon' },
+    { id: 6, Icon: Trophy, x: 78, y: 75, size: 32, duration: 11, delay: -1, color: 'text-primary' },
+    { id: 7, Icon: Lightbulb, x: 8, y: 40, size: 30, duration: 17, delay: -4, color: 'text-accent' },
+    { id: 8, Icon: Zap, x: 95, y: 30, size: 28, duration: 10, delay: -6, color: 'text-contest' },
+    { id: 9, Icon: GitBranch, x: 22, y: 85, size: 30, duration: 14, delay: -3, color: 'text-internship' },
+    { id: 10, Icon: Coffee, x: 72, y: 15, size: 26, duration: 13, delay: -8, color: 'text-muted-foreground' },
+    { id: 11, Icon: Hash, x: 38, y: 78, size: 24, duration: 18, delay: -1, color: 'text-hackathon' },
+    { id: 12, Icon: Cpu, x: 62, y: 45, size: 28, duration: 12, delay: -9, color: 'text-primary' },
+    { id: 13, Icon: Globe, x: 3, y: 55, size: 32, duration: 15, delay: -10, color: 'text-internship' },
+    { id: 14, Icon: Sparkles, x: 82, y: 50, size: 26, duration: 11, delay: -5, color: 'text-accent' },
 ];
 
 const FloatingIcons = memo(() => {
     return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
+            {/* Floating Icons */}
             {floatingIcons.map((item) => {
                 const IconComponent = item.Icon;
                 return (
                     <div
                         key={item.id}
-                        className="absolute animate-float-icon text-primary/20 dark:text-primary/15"
+                        className={`absolute ${item.color} opacity-30 dark:opacity-25`}
                         style={{
                             left: `${item.x}%`,
                             top: `${item.y}%`,
-                            opacity: item.opacity,
-                            animationDuration: `${item.duration}s`,
+                            animation: `float-icon ${item.duration}s ease-in-out infinite`,
                             animationDelay: `${item.delay}s`,
-                            transform: `rotate(${item.rotate}deg)`,
                         }}
                     >
                         <IconComponent
                             size={item.size}
                             strokeWidth={1.5}
-                            className="drop-shadow-sm"
+                            className="drop-shadow-lg"
                         />
                     </div>
                 );
             })}
 
-            {/* Animated code brackets floating */}
-            <div className="absolute left-[20%] top-[30%] animate-float-slow opacity-10 text-hackathon">
-                <span className="font-mono text-4xl font-bold">{`{ }`}</span>
-            </div>
-            <div className="absolute right-[15%] top-[55%] animate-float-reverse opacity-10 text-internship">
-                <span className="font-mono text-3xl font-bold">{`< />`}</span>
-            </div>
-            <div className="absolute left-[45%] bottom-[20%] animate-float-slow opacity-8 text-contest">
-                <span className="font-mono text-2xl font-bold">{`[ ]`}</span>
+            {/* Large floating code symbols */}
+            <div
+                className="absolute left-[18%] top-[25%] text-hackathon/40 dark:text-hackathon/30"
+                style={{ animation: 'float-slow 10s ease-in-out infinite' }}
+            >
+                <span className="font-mono text-5xl font-bold drop-shadow-lg">{`{ }`}</span>
             </div>
 
-            {/* Glowing orbs */}
-            <div className="absolute left-[30%] top-[20%] w-32 h-32 bg-hackathon/10 rounded-full blur-3xl animate-pulse-slow" />
-            <div className="absolute right-[20%] top-[40%] w-40 h-40 bg-internship/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '-2s' }} />
-            <div className="absolute left-[50%] bottom-[30%] w-36 h-36 bg-contest/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '-4s' }} />
+            <div
+                className="absolute right-[12%] top-[50%] text-internship/40 dark:text-internship/30"
+                style={{ animation: 'float-reverse 12s ease-in-out infinite' }}
+            >
+                <span className="font-mono text-4xl font-bold drop-shadow-lg">{`< />`}</span>
+            </div>
+
+            <div
+                className="absolute left-[42%] bottom-[15%] text-contest/40 dark:text-contest/30"
+                style={{ animation: 'float-slow 11s ease-in-out infinite', animationDelay: '-3s' }}
+            >
+                <span className="font-mono text-3xl font-bold drop-shadow-lg">{`[ ]`}</span>
+            </div>
+
+            <div
+                className="absolute right-[35%] top-[12%] text-primary/35 dark:text-primary/25"
+                style={{ animation: 'float-reverse 9s ease-in-out infinite', animationDelay: '-5s' }}
+            >
+                <span className="font-mono text-4xl font-bold drop-shadow-lg">{`( )`}</span>
+            </div>
+
+            {/* Glowing orbs - more visible */}
+            <div
+                className="absolute left-[25%] top-[15%] w-48 h-48 bg-hackathon/20 dark:bg-hackathon/15 rounded-full blur-3xl"
+                style={{ animation: 'pulse-slow 8s ease-in-out infinite' }}
+            />
+            <div
+                className="absolute right-[15%] top-[35%] w-56 h-56 bg-internship/20 dark:bg-internship/15 rounded-full blur-3xl"
+                style={{ animation: 'pulse-slow 10s ease-in-out infinite', animationDelay: '-3s' }}
+            />
+            <div
+                className="absolute left-[45%] bottom-[25%] w-44 h-44 bg-contest/20 dark:bg-contest/15 rounded-full blur-3xl"
+                style={{ animation: 'pulse-slow 7s ease-in-out infinite', animationDelay: '-5s' }}
+            />
+            <div
+                className="absolute left-[60%] top-[10%] w-40 h-40 bg-primary/15 dark:bg-primary/10 rounded-full blur-3xl"
+                style={{ animation: 'pulse-slow 9s ease-in-out infinite', animationDelay: '-2s' }}
+            />
         </div>
     );
 });
