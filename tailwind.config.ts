@@ -130,6 +130,57 @@ export default {
           from: { filter: "blur(10px)", opacity: "0" },
           to: { filter: "blur(0)", opacity: "1" },
         },
+        // New floating icon animations
+        "float-icon": {
+          "0%, 100%": {
+            transform: "translateY(0) rotate(var(--tw-rotate, 0deg))",
+            opacity: "var(--tw-opacity, 0.15)"
+          },
+          "50%": {
+            transform: "translateY(-20px) rotate(calc(var(--tw-rotate, 0deg) + 5deg))",
+            opacity: "calc(var(--tw-opacity, 0.15) + 0.05)"
+          },
+        },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0) translateX(0)" },
+          "25%": { transform: "translateY(-15px) translateX(10px)" },
+          "50%": { transform: "translateY(-25px) translateX(0)" },
+          "75%": { transform: "translateY(-15px) translateX(-10px)" },
+        },
+        "float-reverse": {
+          "0%, 100%": { transform: "translateY(0) translateX(0)" },
+          "25%": { transform: "translateY(10px) translateX(-8px)" },
+          "50%": { transform: "translateY(20px) translateX(0)" },
+          "75%": { transform: "translateY(10px) translateX(8px)" },
+        },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "0.3", transform: "scale(1)" },
+          "50%": { opacity: "0.6", transform: "scale(1.1)" },
+        },
+        "gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "bounce-subtle": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
+        "wiggle": {
+          "0%, 100%": { transform: "rotate(-3deg)" },
+          "50%": { transform: "rotate(3deg)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 20px -5px hsl(var(--primary) / 0.3)" },
+          "50%": { boxShadow: "0 0 40px -5px hsl(var(--primary) / 0.5)" },
+        },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -140,6 +191,17 @@ export default {
         "slide-in-right": "slide-in-right 0.5s ease-out forwards",
         "slide-in-left": "slide-in-left 0.5s ease-out forwards",
         "blur-in": "blur-in 0.6s ease-out forwards",
+        // New animations
+        "float-icon": "float-icon 6s ease-in-out infinite",
+        "float-slow": "float-slow 8s ease-in-out infinite",
+        "float-reverse": "float-reverse 10s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 6s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 8s ease infinite",
+        "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
+        "wiggle": "wiggle 1s ease-in-out infinite",
+        "shimmer": "shimmer 2s linear infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "spin-slow": "spin-slow 20s linear infinite",
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

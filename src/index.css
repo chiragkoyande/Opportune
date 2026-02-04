@@ -446,4 +446,278 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
   }
+
+  /* ===== NEW MODERN ANIMATIONS ===== */
+
+  /* Animated gradient text */
+  .text-gradient-animated {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      90deg,
+      hsl(42 95% 50%),
+      hsl(320 75% 55%),
+      hsl(160 65% 45%),
+      hsl(28 95% 55%),
+      hsl(42 95% 50%)
+    );
+    background-size: 300% 100%;
+    animation: gradient-text 8s ease infinite;
+  }
+
+  @keyframes gradient-text {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Morphing glow effect */
+  .glow-morph {
+    animation: morph-glow 5s ease-in-out infinite;
+  }
+
+  @keyframes morph-glow {
+    0%, 100% {
+      box-shadow: 
+        0 0 20px hsl(var(--hackathon) / 0.3),
+        0 0 40px hsl(var(--hackathon) / 0.1);
+    }
+    33% {
+      box-shadow: 
+        0 0 20px hsl(var(--internship) / 0.3),
+        0 0 40px hsl(var(--internship) / 0.1);
+    }
+    66% {
+      box-shadow: 
+        0 0 20px hsl(var(--contest) / 0.3),
+        0 0 40px hsl(var(--contest) / 0.1);
+    }
+  }
+
+  /* 3D hover effect for cards */
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .card-3d:hover {
+    transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-8px);
+    box-shadow: 
+      0 25px 50px -20px hsl(42 50% 40% / 0.25),
+      0 15px 30px -15px hsl(42 50% 40% / 0.15);
+  }
+
+  /* Staggered fade in for lists */
+  .stagger-fade-in > * {
+    opacity: 0;
+    animation: stagger-reveal 0.6s ease-out forwards;
+  }
+
+  .stagger-fade-in > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-fade-in > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-fade-in > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-fade-in > *:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-fade-in > *:nth-child(5) { animation-delay: 0.5s; }
+  .stagger-fade-in > *:nth-child(6) { animation-delay: 0.6s; }
+
+  @keyframes stagger-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Glitch text effect */
+  .glitch-text {
+    position: relative;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .glitch-text::before {
+    animation: glitch-anim 3s infinite linear alternate-reverse;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+    color: hsl(var(--hackathon));
+  }
+
+  .glitch-text::after {
+    animation: glitch-anim 2s infinite linear alternate-reverse;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+    color: hsl(var(--contest));
+  }
+
+  @keyframes glitch-anim {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-2px); }
+    40% { transform: translateX(2px); }
+    60% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+
+  /* Smooth scale on hover */
+  .hover-scale {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  /* Underline animation */
+  .hover-underline {
+    position: relative;
+    text-decoration: none;
+  }
+
+  .hover-underline::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -2px;
+    left: 50%;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+    transition: all 0.3s ease;
+  }
+
+  .hover-underline:hover::after {
+    width: 100%;
+    left: 0;
+  }
+
+  /* Ripple effect */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .ripple:active::after {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Breathing animation for buttons */
+  .animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+    50% {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px 5px hsl(var(--primary) / 0.2);
+    }
+  }
+
+  /* Slide up reveal */
+  .reveal-up {
+    overflow: hidden;
+  }
+
+  .reveal-up > * {
+    animation: slide-up-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: translateY(100%);
+  }
+
+  @keyframes slide-up-reveal {
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  /* Icon bounce on hover */
+  .icon-bounce:hover svg {
+    animation: icon-bounce 0.5s ease;
+  }
+
+  @keyframes icon-bounce {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-4px); }
+    50% { transform: translateY(0); }
+    75% { transform: translateY(-2px); }
+  }
+
+  /* Rotate on hover */
+  .hover-rotate {
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .hover-rotate:hover {
+    transform: rotate(12deg);
+  }
+
+  /* Smooth border glow */
+  .border-glow {
+    position: relative;
+  }
+
+  .border-glow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      45deg,
+      hsl(var(--hackathon)),
+      hsl(var(--internship)),
+      hsl(var(--contest)),
+      hsl(var(--primary))
+    );
+    background-size: 300% 300%;
+    animation: border-glow-anim 4s ease infinite;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .border-glow:hover::before {
+    opacity: 1;
+  }
+
+  @keyframes border-glow-anim {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Floating badge */
+  .float-badge {
+    animation: float-badge 3s ease-in-out infinite;
+  }
+
+  @keyframes float-badge {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-8px) rotate(1deg); }
+  }
 }
+

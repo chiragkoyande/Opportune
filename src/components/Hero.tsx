@@ -1,6 +1,7 @@
 import { ArrowRight, Rocket, Trophy, Briefcase, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FloatingParticles from './FloatingParticles';
+import FloatingIcons from './FloatingIcons';
 import CursorSparkles from './CursorSparkles';
 import TypingAnimation from './TypingAnimation';
 import TiltCard from './TiltCard';
@@ -13,17 +14,20 @@ const Hero = () => {
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-primary/20 via-primary/5 to-transparent rounded-full blur-3xl animate-blob" />
       <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-gradient-radial from-accent/15 via-accent/5 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-2s' }} />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-hackathon/10 via-hackathon/3 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-4s' }} />
-      
+
       {/* Floating Particles */}
       <FloatingParticles />
-      
+
+      {/* Floating Coding Icons */}
+      <FloatingIcons />
+
       {/* Cursor Sparkles */}
       <CursorSparkles />
-      
+
       <div className="container relative z-10">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary animate-fade-in">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary animate-fade-in float-badge">
             <Sparkles className="h-4 w-4" />
             <span>AI-Powered Opportunity Discovery</span>
           </div>
@@ -31,29 +35,29 @@ const Hero = () => {
           {/* Headline */}
           <h1 className="mb-6 font-display text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
             <TypingAnimation text="Never Miss an" speed={70} delay={300} />
-            <span className="block mt-2 text-gradient">
+            <span className="block mt-2 text-gradient-animated">
               <TypingAnimation text="Opportunity Again" speed={70} delay={1400} />
             </span>
           </h1>
 
           {/* Subheadline */}
           <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Discover hackathons, internships, and coding contests from 
+            Discover hackathons, internships, and coding contests from
             <span className="text-foreground font-medium"> 50+ platforms</span> — all in one place.
           </p>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <Button 
-              size="lg" 
-              className="group bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 shadow-glow font-semibold text-base px-8 h-12"
+            <Button
+              size="lg"
+              className="group bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 shadow-glow font-semibold text-base px-8 h-12 animate-breathe ripple"
               onClick={() => document.getElementById('opportunities')?.scrollIntoView({ behavior: 'smooth' })}
             >
               Explore Opportunities
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="outline"
               className="border-border bg-card shadow-card-hover hover:bg-secondary font-semibold text-base px-8 h-12"
               onClick={() => document.getElementById('opportunities')?.scrollIntoView({ behavior: 'smooth' })}
@@ -139,7 +143,7 @@ const FeatureCard = ({ icon, title, description, color, delay }: FeatureCardProp
       <div className="group relative rounded-2xl border border-border bg-card p-6 overflow-hidden h-full card-hover">
         {/* Glow effect on hover */}
         <div className={`absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-500 bg-gradient-to-br ${colorClasses[color].split(' ')[0]} ${colorClasses[color].split(' ')[1]}`} />
-        
+
         <div className="relative z-10">
           <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${colorClasses[color]} mb-4 transform-gpu`}>
             <span className="text-white">
