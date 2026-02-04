@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Opportunity } from '@/types/opportunity';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -375,4 +375,4 @@ const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
   );
 };
 
-export default OpportunityCard;
+export default memo(OpportunityCard);
