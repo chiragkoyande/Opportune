@@ -6,10 +6,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { Loader2 } from "lucide-react";
-import BackgroundElements from "@/components/BackgroundElements";
+import CommandPalette from "@/components/CommandPalette";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
+const Explore = lazy(() => import("./pages/Explore"));
+const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
+const Jobs = lazy(() => import("./pages/Jobs"));
+const JobDetails = lazy(() => import("./pages/JobDetails"));
+const Companies = lazy(() => import("./pages/Companies"));
+const CompanyProfile = lazy(() => import("./pages/CompanyProfile"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -21,7 +27,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      gcTime: 1000 * 60 * 30, // 30 minutes
       retry: 2,
       refetchOnWindowFocus: false,
     },
@@ -38,15 +44,20 @@ const PageLoader = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      {/* Global floating background elements */}
-      <BackgroundElements />
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <CommandPalette />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/opportunity/:slug" element={<OpportunityDetail />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobDetails />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/:slug" element={<CompanyProfile />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/profile" element={<Profile />} />
@@ -62,4 +73,3 @@ const App = () => (
 );
 
 export default App;
-

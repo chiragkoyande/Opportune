@@ -1,614 +1,407 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Opportunity } from '@/types/opportunity';
+// ============================================================
+// Opportune V3 — useOpportunities Hook
+// Clean, production-grade hook that reads ONLY from the database.
+// Uses TanStack Query for caching, deduplication, and pagination.
+// No runtime scraping. No hardcoded data.
+// ============================================================
 
-interface DbOpportunity {
-  id: string;
-  title: string;
-  type: string;
-  organization: string;
-  description: string;
-  deadline: string;
-  apply_url: string;
-  location: string | null;
-  prize: string | null;
-  tags: string[] | null;
-  source: string | null;
-  is_active: boolean;
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Opportunity,
+  OpportunityFilters,
+  DEFAULT_FILTERS,
+} from '@/types/opportunity';
+
+interface UseOpportunitiesOptions {
+  filters?: Partial<OpportunityFilters>;
+  pageSize?: number;
+  page?: number;
+  enabled?: boolean;
 }
 
-export const useOpportunities = () => {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface UseOpportunitiesResult {
+  opportunities: Opportunity[];
+  loading: boolean;
+  error: string | null;
+  totalCount: number;
+  totalPages: number;
+  refetch: () => void;
+}
 
-  const fetchOpportunities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+/** Map deadline filter to max days */
+function getMaxDaysFromDeadlineFilter(filter: string): number | null {
+  switch (filter) {
+    case 'week': return 7;
+    case 'month': return 30;
+    case '3months': return 90;
+    default: return null;
+  }
+}
 
-    try {
-      /* ===============================
-         1️⃣ FETCH FROM SUPABASE DATABASE (Non-blocking)
-         =============================== */
-      let dbOpportunities: Opportunity[] = [];
+export const useOpportunities = (
+  options: UseOpportunitiesOptions = {}
+): UseOpportunitiesResult => {
+  const {
+    filters: filterOverrides = {},
+    pageSize = 24,
+    page = 0,
+    enabled = true,
+  } = options;
 
-      try {
-        const { data: dbData, error: dbError } = await supabase
+  const filters: OpportunityFilters = { ...DEFAULT_FILTERS, ...filterOverrides };
+
+  const queryKey = ['opportunities', filters, page, pageSize] as const;
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const maxDays = getMaxDaysFromDeadlineFilter(filters.deadline);
+
+      // Use the search RPC function for full-text search with server-side filtering
+      const { data: results, error: rpcError } = await supabase.rpc(
+        'search_opportunities',
+        {
+          search_query: filters.search || null,
+          category_filter: filters.category !== 'all' ? filters.category : null,
+          mode_filter: filters.mode !== 'all' ? filters.mode : null,
+          difficulty_filter: filters.difficulty !== 'all' ? filters.difficulty : null,
+          country_filter: filters.country !== 'all' ? filters.country : null,
+          min_prize: filters.minPrize,
+          max_days_until_deadline: maxDays,
+          sort_by: filters.search ? 'relevance' : filters.sortBy,
+          page_size: pageSize,
+          page_offset: page * pageSize,
+        }
+      );
+
+      if (rpcError) {
+        // Fallback: direct table query if RPC doesn't exist yet (pre-migration)
+        console.warn('RPC search_opportunities not available, falling back to direct query:', rpcError.message);
+        return await fallbackQuery(filters, pageSize, page);
+      }
+
+      // The RPC returns rows with total_count embedded in each row
+      const opportunities: Opportunity[] = (results || []).map((row: Record<string, unknown>) => ({
+        id: row.id as string,
+        slug: (row.slug as string) || '',
+        title: row.title as string,
+        description: row.description as string,
+        organization: row.organization as string,
+        organization_verified: (row.organization_verified as boolean) || false,
+        logo_url: (row.logo_url as string) || null,
+        banner_url: (row.banner_url as string) || null,
+        category: (row.category as Opportunity['category']) || 'hackathon',
+        mode: (row.mode as Opportunity['mode']) || 'online',
+        deadline: row.deadline as string,
+        start_date: (row.start_date as string) || null,
+        end_date: (row.end_date as string) || null,
+        status: (row.status as Opportunity['status']) || 'active',
+        apply_url: row.apply_url as string,
+        official_url: (row.official_url as string) || null,
+        source: (row.source as string) || null,
+        source_platform: (row.source_platform as string) || null,
+        tags: (row.tags as string[]) || [],
+        eligibility: (row.eligibility as string) || null,
+        team_size: (row.team_size as string) || null,
+        location: (row.location as string) || null,
+        country: (row.country as string) || null,
+        state: null,
+        city: (row.city as string) || null,
+        stipend: (row.stipend as string) || null,
+        prize: (row.prize as string) || null,
+        prizes_total: (row.prizes_total as number) || null,
+        currency: (row.currency as string) || 'INR',
+        difficulty: (row.difficulty as Opportunity['difficulty']) || 'beginner',
+        views: (row.views as number) || 0,
+        bookmarks: (row.bookmarks as number) || 0,
+        applications: 0,
+        featured: (row.featured as boolean) || false,
+        is_active: true,
+        created_at: row.created_at as string,
+        updated_at: row.updated_at as string,
+        relevance_score: (row.relevance_score as number) || 0,
+        total_count: (row.total_count as number) || 0,
+      }));
+
+      const totalCount = opportunities.length > 0
+        ? (opportunities[0].total_count || 0)
+        : 0;
+
+      return { opportunities, totalCount };
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30,    // 30 minutes cache
+  });
+
+  return {
+    opportunities: data?.opportunities || [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    totalCount: data?.totalCount || 0,
+    totalPages: Math.ceil((data?.totalCount || 0) / pageSize),
+    refetch,
+  };
+};
+
+/**
+ * Fallback query for when the search RPC function isn't deployed yet.
+ * Uses direct Supabase table query with client-side filtering.
+ */
+async function fallbackQuery(
+  filters: OpportunityFilters,
+  pageSize: number,
+  page: number
+) {
+  let query = supabase
+    .from('opportunities')
+    .select('*', { count: 'exact' })
+    .eq('is_active', true)
+    .gte('deadline', new Date().toISOString())
+    .order('deadline', { ascending: true })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+
+  // Apply category filter using the legacy 'type' column
+  if (filters.category !== 'all') {
+    query = query.eq('type', filters.category);
+  }
+
+  // Apply text search (basic ILIKE)
+  if (filters.search) {
+    query = query.or(
+      `title.ilike.%${filters.search}%,organization.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+    );
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  const opportunities: Opportunity[] = (data || []).map((row) => ({
+    id: row.id,
+    slug: (row as Record<string, unknown>).slug as string || '',
+    title: row.title,
+    description: row.description,
+    organization: row.organization,
+    organization_verified: false,
+    logo_url: null,
+    banner_url: null,
+    category: (row.type as Opportunity['category']) || 'hackathon',
+    mode: 'online' as const,
+    deadline: row.deadline,
+    start_date: null,
+    end_date: null,
+    status: 'active' as const,
+    apply_url: row.apply_url,
+    official_url: null,
+    source: row.source,
+    source_platform: null,
+    tags: row.tags || [],
+    eligibility: null,
+    team_size: null,
+    location: row.location,
+    country: null,
+    state: null,
+    city: null,
+    stipend: null,
+    prize: row.prize,
+    prizes_total: null,
+    currency: 'INR',
+    difficulty: 'beginner' as const,
+    views: 0,
+    bookmarks: 0,
+    applications: 0,
+    featured: false,
+    is_active: true,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+
+  return { opportunities, totalCount: count || 0 };
+}
+
+/**
+ * Hook for fetching a single opportunity by slug.
+ * Used on the opportunity details page.
+ */
+export const useOpportunityBySlug = (slug: string | undefined) => {
+  return useQuery({
+    queryKey: ['opportunity', slug],
+    queryFn: async () => {
+      if (!slug) return null;
+
+      // Try by slug first
+      let { data, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+
+      // If not found by slug, try by id (backward compat)
+      if (!data && !error) {
+        const result = await supabase
           .from('opportunities')
           .select('*')
+          .eq('id', slug)
+          .maybeSingle();
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) throw error;
+      if (!data) return null;
+
+      const row = data as Record<string, unknown>;
+      return {
+        id: row.id as string,
+        slug: (row.slug as string) || '',
+        title: row.title as string,
+        description: row.description as string,
+        organization: row.organization as string,
+        organization_verified: (row.organization_verified as boolean) || false,
+        logo_url: (row.logo_url as string) || null,
+        banner_url: (row.banner_url as string) || null,
+        category: ((row.category || row.type) as Opportunity['category']) || 'hackathon',
+        mode: (row.mode as Opportunity['mode']) || 'online',
+        deadline: row.deadline as string,
+        start_date: (row.start_date as string) || null,
+        end_date: (row.end_date as string) || null,
+        status: (row.status as Opportunity['status']) || 'active',
+        apply_url: row.apply_url as string,
+        official_url: (row.official_url as string) || null,
+        source: (row.source as string) || null,
+        source_platform: (row.source_platform as string) || null,
+        tags: (row.tags as string[]) || [],
+        eligibility: (row.eligibility as string) || null,
+        team_size: (row.team_size as string) || null,
+        location: (row.location as string) || null,
+        country: (row.country as string) || null,
+        state: null,
+        city: (row.city as string) || null,
+        stipend: (row.stipend as string) || null,
+        prize: (row.prize as string) || null,
+        prizes_total: (row.prizes_total as number) || null,
+        currency: (row.currency as string) || 'INR',
+        difficulty: (row.difficulty as Opportunity['difficulty']) || 'beginner',
+        views: (row.views as number) || 0,
+        bookmarks: (row.bookmarks as number) || 0,
+        applications: 0,
+        featured: (row.featured as boolean) || false,
+        is_active: (row.is_active as boolean) ?? true,
+        created_at: row.created_at as string,
+        updated_at: row.updated_at as string,
+      } as Opportunity;
+    },
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 10,
+  });
+};
+
+/**
+ * Hook for fetching featured opportunities (for landing page).
+ */
+export const useFeaturedOpportunities = () => {
+  return useQuery({
+    queryKey: ['opportunities', 'featured'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('is_active', true)
+        .gte('deadline', new Date().toISOString())
+        .order('deadline', { ascending: true })
+        .limit(12);
+
+      if (error) throw error;
+
+      return (data || []).map((row) => {
+        const r = row as Record<string, unknown>;
+        return {
+          id: r.id as string,
+          slug: (r.slug as string) || '',
+          title: r.title as string,
+          description: r.description as string,
+          organization: r.organization as string,
+          organization_verified: (r.organization_verified as boolean) || false,
+          logo_url: (r.logo_url as string) || null,
+          banner_url: (r.banner_url as string) || null,
+          category: ((r.category || r.type) as Opportunity['category']) || 'hackathon',
+          mode: (r.mode as Opportunity['mode']) || 'online',
+          deadline: r.deadline as string,
+          start_date: (r.start_date as string) || null,
+          end_date: (r.end_date as string) || null,
+          status: (r.status as Opportunity['status']) || 'active',
+          apply_url: r.apply_url as string,
+          official_url: (r.official_url as string) || null,
+          source: (r.source as string) || null,
+          source_platform: (r.source_platform as string) || null,
+          tags: (r.tags as string[]) || [],
+          eligibility: (r.eligibility as string) || null,
+          team_size: (r.team_size as string) || null,
+          location: (r.location as string) || null,
+          country: (r.country as string) || null,
+          state: null,
+          city: (r.city as string) || null,
+          stipend: (r.stipend as string) || null,
+          prize: (r.prize as string) || null,
+          prizes_total: (r.prizes_total as number) || null,
+          currency: (r.currency as string) || 'INR',
+          difficulty: (r.difficulty as Opportunity['difficulty']) || 'beginner',
+          views: (r.views as number) || 0,
+          bookmarks: (r.bookmarks as number) || 0,
+          applications: 0,
+          featured: (r.featured as boolean) || false,
+          is_active: true,
+          created_at: r.created_at as string,
+          updated_at: r.updated_at as string,
+        } as Opportunity;
+      });
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+/**
+ * Hook for fetching platform statistics (for landing page).
+ */
+export const usePlatformStats = () => {
+  return useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_platform_stats');
+
+      if (error) {
+        // Fallback: manual count
+        const { count } = await supabase
+          .from('opportunities')
+          .select('*', { count: 'exact', head: true })
           .eq('is_active', true)
-          .order('deadline', { ascending: true });
+          .gte('deadline', new Date().toISOString());
 
-        if (!dbError && dbData) {
-          dbOpportunities = dbData.map((opp: DbOpportunity) => ({
-            id: opp.id,
-            title: opp.title,
-            type: opp.type as 'hackathon' | 'internship' | 'contest',
-            organization: opp.organization,
-            description: opp.description,
-            deadline: new Date(opp.deadline),
-            applyUrl: opp.apply_url,
-            location: opp.location || undefined,
-            prize: opp.prize || undefined,
-            tags: opp.tags || [],
-            source: opp.source || 'Admin',
-          }));
-        }
-      } catch {
-        // Silently fail - curated data will be used
+        return {
+          total_opportunities: count || 0,
+          total_hackathons: 0,
+          total_internships: 0,
+          total_contests: 0,
+          total_scholarships: 0,
+          total_users: 0,
+          categories_count: 12,
+          sources_count: 0,
+        };
       }
 
-      /* ===============================
-         2️⃣ FETCH LIVE OPPORTUNITIES (Fast Sources Only)
-         =============================== */
-      const liveOpportunities: Opportunity[] = [];
-
-      /* ---------- API 1: Codeforces (Works reliably) ---------- */
-      try {
-        const response = await fetch('https://codeforces.com/api/contest.list?gym=false');
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.result) {
-            data.result
-              .filter(
-                (c: any) =>
-                  c.phase === 'BEFORE' &&
-                  new Date(c.startTimeSeconds * 1000) > new Date()
-              )
-              .slice(0, 10)
-              .forEach((contest: any, idx: number) => {
-                liveOpportunities.push({
-                  id: `codeforces-${idx}`,
-                  title: contest.name || 'Codeforces Contest',
-                  type: 'contest',
-                  organization: 'Codeforces',
-                  description: `Competitive programming contest • Duration: ${Math.round(contest.durationSeconds / 3600)}h`,
-                  deadline: new Date(contest.startTimeSeconds * 1000),
-                  applyUrl: `https://codeforces.com/contest/${contest.id}`,
-                  location: 'Virtual',
-                  tags: ['Codeforces', 'Competitive', contest.type],
-                  source: 'Codeforces (Live)',
-                });
-              });
-          }
-        }
-      } catch {
-        // Silently fail - curated data will be used
-      }
-
-      /* NOTE: CodeChef and HackerEarth APIs removed due to CORS blocking */
-
-      /* ---------- Firecrawl Edge Function (Scraped Data) ---------- */
-      try {
-        const { data: scrapedData, error: fnError } = await supabase.functions.invoke('fetch-opportunities', {
-          body: {}
-        });
-
-        if (!fnError && scrapedData?.success && scrapedData?.data) {
-          scrapedData.data.forEach((opp: any) => {
-            liveOpportunities.push({
-              id: opp.id || `firecrawl-${Date.now()}-${Math.random()}`,
-              title: opp.title,
-              type: opp.type || 'hackathon',
-              organization: opp.organization || 'Unknown',
-              description: opp.description || 'Discover this exciting opportunity!',
-              deadline: new Date(opp.deadline),
-              applyUrl: opp.applyUrl || opp.url || '#',
-              location: opp.location || 'Virtual',
-              prize: opp.prize,
-              tags: opp.tags || ['Scraped'],
-              source: opp.source || 'Firecrawl',
-            });
-          });
-        }
-      } catch {
-        // Silently fail - curated data will be used
-      }
-
-      /* ---------- Curated Hackathons ---------- */
-      const curatedHackathons: Opportunity[] = [
-        {
-          id: 'sih-2026',
-          title: 'Smart India Hackathon 2026',
-          type: 'hackathon',
-          organization: 'Government of India',
-          description: 'India\'s largest open innovation platform - solve problems for government ministries',
-          deadline: new Date('2026-09-15'),
-          applyUrl: 'https://sih.gov.in/',
-          location: 'India (Multiple Cities)',
-          prize: '₹1,00,000+',
-          tags: ['Government', 'India', 'National'],
-          source: 'SIH Official',
-        },
-        {
-          id: 'mlh-ghw-2026',
-          title: 'MLH Global Hack Week 2026',
-          type: 'hackathon',
-          organization: 'Major League Hacking',
-          description: 'Week-long hackathon celebration with 50K+ participants worldwide',
-          deadline: new Date('2026-02-28'),
-          applyUrl: 'https://ghw.mlh.io/',
-          location: 'Global / Virtual',
-          prize: '$10,000+',
-          tags: ['MLH', 'Global', 'Beginner Friendly'],
-          source: 'MLH Official',
-        },
-        {
-          id: 'google-solution-2026',
-          title: 'Google Solution Challenge 2026',
-          type: 'hackathon',
-          organization: 'Google GDSC',
-          description: 'Build solutions addressing UN Sustainable Development Goals using Google tech',
-          deadline: new Date('2026-03-31'),
-          applyUrl: 'https://developers.google.com/community/gdsc-solution-challenge',
-          location: 'Global',
-          prize: '$10,000+',
-          tags: ['Google', 'GDSC', 'UN SDGs'],
-          source: 'Google Official',
-        },
-        {
-          id: 'microsoft-imagine-2026',
-          title: 'Microsoft Imagine Cup 2026',
-          type: 'hackathon',
-          organization: 'Microsoft',
-          description: 'Premier global student technology competition - innovate with AI & Azure',
-          deadline: new Date('2026-04-30'),
-          applyUrl: 'https://imaginecup.microsoft.com/',
-          location: 'Global',
-          prize: '$100,000+',
-          tags: ['Microsoft', 'AI', 'Azure', 'Students'],
-          source: 'Microsoft Official',
-        },
-        {
-          id: 'unstop-buildit-2026',
-          title: 'BuildIt by Unstop 2026',
-          type: 'hackathon',
-          organization: 'Unstop',
-          description: 'Innovation hackathon with verified rewards and mentorship',
-          deadline: new Date(Date.now() + 45 * 86400000),
-          applyUrl: 'https://unstop.com/hackathons',
-          location: 'India / Virtual',
-          prize: '₹50,000+',
-          tags: ['Unstop', 'India', 'Verified'],
-          source: 'Unstop',
-        },
-        {
-          id: 'ethglobal-2026',
-          title: 'ETHGlobal Hackathon Series 2026',
-          type: 'hackathon',
-          organization: 'ETHGlobal',
-          description: 'Build the future of Web3 and decentralized applications',
-          deadline: new Date('2026-06-15'),
-          applyUrl: 'https://ethglobal.com/',
-          location: 'Multiple Cities + Virtual',
-          prize: '$500,000+',
-          tags: ['Web3', 'Ethereum', 'Blockchain'],
-          source: 'ETHGlobal',
-        },
-        {
-          id: 'nasa-space-apps-2026',
-          title: 'NASA Space Apps Challenge 2026',
-          type: 'hackathon',
-          organization: 'NASA',
-          description: 'Solve challenges using NASA open data - held in 200+ cities worldwide',
-          deadline: new Date('2026-10-05'),
-          applyUrl: 'https://www.spaceappschallenge.org/',
-          location: 'Global (200+ cities)',
-          prize: 'NASA Mentorship',
-          tags: ['NASA', 'Space', 'Open Data'],
-          source: 'NASA Official',
-        },
-      ];
-
-      liveOpportunities.push(...curatedHackathons);
-
-      /* ---------- Curated Internships ---------- */
-      const curatedInternships: Opportunity[] = [
-        {
-          id: 'gsoc-2026',
-          title: 'Google Summer of Code 2026',
-          type: 'internship',
-          organization: 'Google',
-          description: 'Contribute to open source projects with $1,500-$6,000 stipend',
-          deadline: new Date('2026-04-02'),
-          applyUrl: 'https://summerofcode.withgoogle.com/',
-          location: 'Remote',
-          prize: '$1,500 - $6,000',
-          tags: ['Google', 'Open Source', 'Stipend'],
-          source: 'Google GSoC',
-        },
-        {
-          id: 'mlh-fellowship-2026',
-          title: 'MLH Fellowship 2026',
-          type: 'internship',
-          organization: 'Major League Hacking',
-          description: 'Remote internship alternative - work on real open source projects',
-          deadline: new Date('2026-05-01'),
-          applyUrl: 'https://fellowship.mlh.io/',
-          location: 'Remote',
-          prize: '$5,000 stipend',
-          tags: ['MLH', 'Open Source', 'Remote'],
-          source: 'MLH Fellowship',
-        },
-        {
-          id: 'outreachy-2026',
-          title: 'Outreachy Internship 2026',
-          type: 'internship',
-          organization: 'Outreachy',
-          description: 'Paid internships in open source for underrepresented groups',
-          deadline: new Date('2026-02-25'),
-          applyUrl: 'https://www.outreachy.org/',
-          location: 'Remote',
-          prize: '$7,000 stipend',
-          tags: ['Open Source', 'Diversity', 'Paid'],
-          source: 'Outreachy',
-        },
-        {
-          id: 'lfx-mentorship-2026',
-          title: 'LFX Mentorship Program 2026',
-          type: 'internship',
-          organization: 'Linux Foundation',
-          description: 'Get mentored while contributing to CNCF & Linux projects',
-          deadline: new Date('2026-03-15'),
-          applyUrl: 'https://mentorship.lfx.linuxfoundation.org/',
-          location: 'Remote',
-          prize: '$3,000 - $6,000',
-          tags: ['Linux', 'CNCF', 'Kubernetes'],
-          source: 'Linux Foundation',
-        },
-      ];
-
-      liveOpportunities.push(...curatedInternships);
-
-      // 🚀 IMMEDIATE DISPLAY: Show curated opportunities right away while live APIs load
-      const currentDate = new Date();
-      const earlyCurated = [...curatedHackathons, ...curatedInternships]
-        .filter(opp => opp.deadline >= currentDate)
-        .sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
-
-      if (earlyCurated.length > 0) {
-        setOpportunities(earlyCurated);
-        setLoading(false);
-      }
-
-      /* ---------- More Indian Hackathons & Opportunities (2026) ---------- */
-      const moreIndianOpportunities: Opportunity[] = [
-        // Unstop Hackathons
-        {
-          id: 'unstop-codefest-2026',
-          title: 'CodeFest 2026 - Unstop',
-          type: 'hackathon',
-          organization: 'Unstop',
-          description: 'National level coding hackathon with prizes worth ₹3 Lakhs',
-          deadline: new Date(Date.now() + 30 * 86400000),
-          applyUrl: 'https://unstop.com/hackathons',
-          location: 'India / Virtual',
-          prize: '₹3,00,000',
-          tags: ['Unstop', 'Coding', 'India'],
-          source: 'Unstop',
-        },
-        {
-          id: 'unstop-innovate-2026',
-          title: 'Innovation Challenge 2026',
-          type: 'hackathon',
-          organization: 'Unstop',
-          description: 'Showcase your innovative ideas and win exciting prizes',
-          deadline: new Date(Date.now() + 45 * 86400000),
-          applyUrl: 'https://unstop.com/hackathons',
-          location: 'India',
-          prize: '₹2,00,000',
-          tags: ['Innovation', 'India', 'Startup'],
-          source: 'Unstop',
-        },
-        {
-          id: 'unstop-techathon-2026',
-          title: 'Techathon 2026',
-          type: 'hackathon',
-          organization: 'Unstop',
-          description: 'Build solutions for real-world problems',
-          deadline: new Date(Date.now() + 60 * 86400000),
-          applyUrl: 'https://unstop.com/hackathons',
-          location: 'India / Virtual',
-          prize: '₹1,50,000',
-          tags: ['Tech', 'India', 'Problem Solving'],
-          source: 'Unstop',
-        },
-        // College Hackathons 2026
-        {
-          id: 'iit-bombay-techfest-2026',
-          title: 'IIT Bombay Techfest 2026',
-          type: 'hackathon',
-          organization: 'IIT Bombay',
-          description: 'Asia\'s largest science and technology festival',
-          deadline: new Date('2026-12-20'),
-          applyUrl: 'https://techfest.org/',
-          location: 'Mumbai, India',
-          prize: '₹10,00,000+',
-          tags: ['IIT', 'Techfest', 'Mumbai'],
-          source: 'IIT Bombay',
-        },
-        {
-          id: 'iit-delhi-tryst-2026',
-          title: 'Tryst IIT Delhi 2026',
-          type: 'hackathon',
-          organization: 'IIT Delhi',
-          description: 'Annual technical festival with multiple competitions',
-          deadline: new Date('2026-02-15'),
-          applyUrl: 'https://tryst-iitd.org/',
-          location: 'New Delhi, India',
-          prize: '₹5,00,000+',
-          tags: ['IIT', 'Delhi', 'Tech Fest'],
-          source: 'IIT Delhi',
-        },
-        {
-          id: 'bits-apogee-2026',
-          title: 'BITS Pilani Apogee 2026',
-          type: 'hackathon',
-          organization: 'BITS Pilani',
-          description: 'Technical festival featuring hackathons and coding contests',
-          deadline: new Date('2026-03-10'),
-          applyUrl: 'https://bits-apogee.org/',
-          location: 'Pilani, India',
-          prize: '₹3,00,000+',
-          tags: ['BITS', 'Apogee', 'Rajasthan'],
-          source: 'BITS Pilani',
-        },
-        {
-          id: 'nit-trichy-pragyan-2026',
-          title: 'Pragyan NIT Trichy 2026',
-          type: 'hackathon',
-          organization: 'NIT Trichy',
-          description: 'ISO certified technical festival of South India',
-          deadline: new Date('2026-02-28'),
-          applyUrl: 'https://pragyan.org/',
-          location: 'Trichy, India',
-          prize: '₹2,00,000+',
-          tags: ['NIT', 'Pragyan', 'Tamil Nadu'],
-          source: 'NIT Trichy',
-        },
-        // Corporate Hackathons India 2026
-        {
-          id: 'tcs-codevita-2026',
-          title: 'TCS CodeVita 2026',
-          type: 'contest',
-          organization: 'TCS',
-          description: 'World\'s largest programming competition with job offers',
-          deadline: new Date('2026-03-31'),
-          applyUrl: 'https://www.tcscodevita.com/',
-          location: 'Virtual / India',
-          prize: '$20,000+',
-          tags: ['TCS', 'Jobs', 'Coding'],
-          source: 'TCS',
-        },
-        {
-          id: 'infosys-hackwithinfy-2026',
-          title: 'HackWithInfy 2026',
-          type: 'hackathon',
-          organization: 'Infosys',
-          description: 'Coding contest for engineering students with PPO opportunities',
-          deadline: new Date('2026-04-30'),
-          applyUrl: 'https://www.infosys.com/careers/hackwithinfy.html',
-          location: 'Virtual / India',
-          prize: '₹2,00,000 + PPO',
-          tags: ['Infosys', 'Jobs', 'Coding'],
-          source: 'Infosys',
-        },
-        {
-          id: 'flipkart-grid-2026',
-          title: 'Flipkart GRiD 7.0',
-          type: 'hackathon',
-          organization: 'Flipkart',
-          description: 'E-commerce challenge with pre-placement interviews',
-          deadline: new Date('2026-05-15'),
-          applyUrl: 'https://unstop.com/hackathons/flipkart-grid',
-          location: 'Virtual / Bangalore',
-          prize: '₹3,00,000 + Internship',
-          tags: ['Flipkart', 'E-commerce', 'PPO'],
-          source: 'Flipkart',
-        },
-        {
-          id: 'amazon-ml-challenge-2026',
-          title: 'Amazon ML Challenge 2026',
-          type: 'contest',
-          organization: 'Amazon',
-          description: 'Machine learning competition for students',
-          deadline: new Date('2026-06-01'),
-          applyUrl: 'https://www.hackerearth.com/challenges/competitive/amazon-ml-challenge/',
-          location: 'Virtual',
-          prize: '₹5,00,000 + Internship',
-          tags: ['Amazon', 'ML', 'AI'],
-          source: 'Amazon',
-        },
-        {
-          id: 'microsoft-engage-2026',
-          title: 'Microsoft Engage 2026',
-          type: 'internship',
-          organization: 'Microsoft India',
-          description: 'Mentorship program for engineering students',
-          deadline: new Date('2026-05-20'),
-          applyUrl: 'https://microsoft.acehacker.com/engage/',
-          location: 'Virtual / India',
-          prize: 'Internship + Mentorship',
-          tags: ['Microsoft', 'Internship', 'Mentorship'],
-          source: 'Microsoft India',
-        },
-        {
-          id: 'google-coding-2026',
-          title: 'Google Coding Competitions 2026',
-          type: 'contest',
-          organization: 'Google',
-          description: 'Algorithmic competitions to test your coding skills',
-          deadline: new Date('2026-04-15'),
-          applyUrl: 'https://codingcompetitions.withgoogle.com/',
-          location: 'Virtual',
-          prize: 'Prizes + Job Opportunities',
-          tags: ['Google', 'Algorithms', 'Global'],
-          source: 'Google',
-        },
-        // Indian Internships 2026
-        {
-          id: 'swoc-2026',
-          title: 'Social Winter of Code 2026',
-          type: 'internship',
-          organization: 'Script Foundation',
-          description: 'Open source program for students to contribute to projects',
-          deadline: new Date('2026-02-28'),
-          applyUrl: 'https://swoc.tech/',
-          location: 'Remote / India',
-          prize: 'Certificates + Swags',
-          tags: ['Open Source', 'Winter', 'India'],
-          source: 'SWOC',
-        },
-        {
-          id: 'gssoc-2026',
-          title: 'GirlScript Summer of Code 2026',
-          type: 'internship',
-          organization: 'GirlScript Foundation',
-          description: '3-month open source program focused on beginners',
-          deadline: new Date('2026-03-15'),
-          applyUrl: 'https://gssoc.girlscript.tech/',
-          location: 'Remote / India',
-          prize: 'Certificates + Goodies',
-          tags: ['Open Source', 'Beginner', 'India'],
-          source: 'GirlScript',
-        },
-        {
-          id: 'kwoc-2026',
-          title: 'Kharagpur Winter of Code 2026',
-          type: 'internship',
-          organization: 'IIT Kharagpur',
-          description: 'Open source contribution program by KOSS IIT KGP',
-          deadline: new Date('2026-12-31'),
-          applyUrl: 'https://kwoc.kossiitkgp.org/',
-          location: 'Remote / India',
-          prize: 'Certificates + Swags',
-          tags: ['IIT', 'Open Source', 'Kharagpur'],
-          source: 'IIT Kharagpur',
-        },
-        // More Contests
-        {
-          id: 'leetcode-weekly',
-          title: 'LeetCode Weekly Contests',
-          type: 'contest',
-          organization: 'LeetCode',
-          description: 'Weekly algorithmic contests - Every Sunday',
-          deadline: new Date(Date.now() + 7 * 86400000),
-          applyUrl: 'https://leetcode.com/contest/',
-          location: 'Virtual',
-          tags: ['LeetCode', 'Weekly', 'Algorithms'],
-          source: 'LeetCode',
-        },
-        {
-          id: 'atcoder-beginner',
-          title: 'AtCoder Beginner Contest',
-          type: 'contest',
-          organization: 'AtCoder',
-          description: 'Weekly beginner-friendly programming contest',
-          deadline: new Date(Date.now() + 5 * 86400000),
-          applyUrl: 'https://atcoder.jp/contests/',
-          location: 'Virtual',
-          tags: ['AtCoder', 'Beginner', 'Japan'],
-          source: 'AtCoder',
-        },
-        {
-          id: 'hackerrank-week',
-          title: 'HackerRank Week of Code',
-          type: 'contest',
-          organization: 'HackerRank',
-          description: 'Multi-day algorithmic competition',
-          deadline: new Date(Date.now() + 14 * 86400000),
-          applyUrl: 'https://www.hackerrank.com/contests',
-          location: 'Virtual',
-          tags: ['HackerRank', 'Algorithms', 'Multi-day'],
-          source: 'HackerRank',
-        },
-        // Tech Community Events
-        {
-          id: 'devfolio-hackathon',
-          title: 'Devfolio Weekend Hackathons',
-          type: 'hackathon',
-          organization: 'Devfolio',
-          description: 'Community hackathons happening every weekend across India',
-          deadline: new Date(Date.now() + 10 * 86400000),
-          applyUrl: 'https://devfolio.co/hackathons',
-          location: 'India / Virtual',
-          prize: 'Varies',
-          tags: ['Devfolio', 'Weekend', 'Community'],
-          source: 'Devfolio',
-        },
-        {
-          id: 'mlh-local-hack',
-          title: 'MLH Local Hack Day 2026',
-          type: 'hackathon',
-          organization: 'MLH',
-          description: 'Build projects in your local community',
-          deadline: new Date(Date.now() + 20 * 86400000),
-          applyUrl: 'https://localhackday.mlh.io/',
-          location: 'Multiple Cities',
-          prize: 'Swags + Prizes',
-          tags: ['MLH', 'Local', 'Community'],
-          source: 'MLH',
-        },
-      ];
-
-      liveOpportunities.push(...moreIndianOpportunities);
-
-      /* ===============================
-         3️⃣ MERGE + SORT + FILTER FUTURE ONLY
-         =============================== */
-      const now = new Date();
-
-      // Filter live opportunities to only include future events
-      const futureLiveOpportunities = liveOpportunities.filter(opp => {
-        return opp.deadline >= now;
-      });
-
-      const seen = new Set<string>();
-      const uniqueLive = futureLiveOpportunities.filter((opp) => {
-        const key = opp.title.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      // Also filter DB opportunities to only show future events
-      const futureDbOpportunities = dbOpportunities.filter(opp => opp.deadline >= now);
-
-      const combined = [...futureDbOpportunities, ...uniqueLive];
-      combined.sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
-
-      setOpportunities(combined);
-      setLoading(false);
-    } catch {
-      setError('Failed to fetch opportunities');
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchOpportunities();
-  }, [fetchOpportunities]);
-
-  return { opportunities, loading, error, refetch: fetchOpportunities };
+      return data as unknown as {
+        total_opportunities: number;
+        total_hackathons: number;
+        total_internships: number;
+        total_contests: number;
+        total_scholarships: number;
+        total_users: number;
+        categories_count: number;
+        sources_count: number;
+      };
+    },
+    staleTime: 1000 * 60 * 15, // 15 min cache for stats
+  });
 };
