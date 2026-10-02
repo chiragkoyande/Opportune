@@ -1,9 +1,22 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { Opportunity } from '@/types/opportunity';
+
+export interface CompareItem {
+  id: string;
+  title: string;
+  type: string;
+  organization: string;
+  description?: string;
+  deadline?: Date | string;
+  applyUrl?: string;
+  location?: string;
+  prize?: string;
+  tags?: string[];
+  source?: string;
+}
 
 interface CompareContextType {
-  compareList: Opportunity[];
-  addToCompare: (opportunity: Opportunity) => void;
+  compareList: CompareItem[];
+  addToCompare: (opportunity: CompareItem) => void;
   removeFromCompare: (opportunityId: string) => void;
   isInCompare: (opportunityId: string) => boolean;
   clearCompare: () => void;
@@ -15,9 +28,9 @@ const CompareContext = createContext<CompareContextType | undefined>(undefined);
 const MAX_COMPARE_ITEMS = 3;
 
 export const CompareProvider = ({ children }: { children: ReactNode }) => {
-  const [compareList, setCompareList] = useState<Opportunity[]>([]);
+  const [compareList, setCompareList] = useState<CompareItem[]>([]);
 
-  const addToCompare = useCallback((opportunity: Opportunity) => {
+  const addToCompare = useCallback((opportunity: CompareItem) => {
     setCompareList(prev => {
       if (prev.length >= MAX_COMPARE_ITEMS) return prev;
       if (prev.some(o => o.id === opportunity.id)) return prev;

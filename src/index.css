@@ -28,10 +28,14 @@
     --accent: 28 95% 55%;
     --accent-foreground: 0 0% 100%;
 
-    /* Category colors - warm palette */
-    --hackathon: 320 75% 55%;
+    /* Category colors - distinct palette */
+    --job: 221 83% 53%;
+    --job-foreground: 0 0% 100%;
+    --job-glow: 221 90% 65%;
+
+    --hackathon: 280 75% 55%;
     --hackathon-foreground: 0 0% 100%;
-    --hackathon-glow: 320 85% 65%;
+    --hackathon-glow: 280 85% 65%;
 
     --internship: 160 65% 45%;
     --internship-foreground: 0 0% 100%;
@@ -94,7 +98,11 @@
     --accent: 28 95% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --hackathon: 320 80% 60%;
+    --job: 217 91% 60%;
+    --job-foreground: 0 0% 100%;
+    --job-glow: 217 91% 70%;
+
+    --hackathon: 280 80% 65%;
     --hackathon-foreground: 0 0% 100%;
 
     --internship: 160 70% 50%;
@@ -127,7 +135,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-mesh noise-bg text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
 

@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:all": "npm run dev:backend & npm run dev",
     "build": "vite build",
+    "build:backend": "npm --prefix backend run build",
+    "build:all": "npm run build && npm run build:backend",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "typecheck:backend": "npm --prefix backend run typecheck",
+    "test:backend": "npm --prefix backend test",
     "preview": "vite preview"
   },
   "dependencies": {

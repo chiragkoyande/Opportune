@@ -7,14 +7,32 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Opportunity } from '@/types/opportunity';
-import { format } from 'date-fns';
+export interface CalendarOpportunityItem {
+  id: string;
+  title: string;
+  type?: string;
+  category?: string;
+  organization?: string;
+  applyUrl?: string;
+  location?: string;
+  deadline?: Date | string | null;
+}
 
 interface CalendarMenuProps {
-  opportunity: Opportunity;
+  opportunity: CalendarOpportunityItem;
 }
 
 const CalendarMenu = ({ opportunity }: CalendarMenuProps) => {
+  const deadlineDate = opportunity.deadline
+    ? typeof opportunity.deadline === 'string'
+      ? new Date(opportunity.deadline)
+      : opportunity.deadline
+    : null;
+
+  if (!deadlineDate || isNaN(deadlineDate.getTime())) {
+    return null;
+  }
+
   const formatDateForGoogle = (date: Date) => {
     return format(date, "yyyyMMdd'T'HHmmss");
   };
@@ -24,11 +42,13 @@ const CalendarMenu = ({ opportunity }: CalendarMenuProps) => {
   };
 
   const handleGoogleCalendar = () => {
-    const startDate = formatDateForGoogle(opportunity.deadline);
-    const endDate = formatDateForGoogle(new Date(opportunity.deadline.getTime() + 60 * 60 * 1000)); // 1 hour event
+    const startDate = formatDateForGoogle(deadlineDate);
+    const endDate = formatDateForGoogle(new Date(deadlineDate.getTime() + 60 * 60 * 1000)); // 1 hour event
     
+    const eventType = opportunity.type || opportunity.category || 'Opportunity';
+    const org = opportunity.organization || 'Opportune';
     const eventTitle = `Deadline: ${opportunity.title}`;
-    const eventDetails = `${opportunity.type.charAt(0).toUpperCase() + opportunity.type.slice(1)} by ${opportunity.organization}\n\nApply here: ${opportunity.applyUrl}`;
+    const eventDetails = `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} by ${org}\n\nApply here: ${opportunity.applyUrl || ''}`;
     
     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(eventDetails)}&location=${encodeURIComponent(opportunity.location || '')}`;
     
@@ -37,21 +57,23 @@ const CalendarMenu = ({ opportunity }: CalendarMenuProps) => {
   };
 
   const handleDownloadICS = () => {
-    const startDate = formatDateForICS(opportunity.deadline);
-    const endDate = formatDateForICS(new Date(opportunity.deadline.getTime() + 60 * 60 * 1000));
+    const startDate = formatDateForICS(deadlineDate);
+    const endDate = formatDateForICS(new Date(deadlineDate.getTime() + 60 * 60 * 1000));
+    const eventType = opportunity.type || opportunity.category || 'Opportunity';
+    const org = opportunity.organization || 'Opportune';
     
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//OpportunityFinder//EN
+PRODID:-//Opportune//EN
 BEGIN:VEVENT
-UID:${opportunity.id}@opportunityfinder
+UID:${opportunity.id}@opportune
 DTSTAMP:${formatDateForICS(new Date())}
 DTSTART:${startDate}
 DTEND:${endDate}
 SUMMARY:Deadline: ${opportunity.title}
-DESCRIPTION:${opportunity.type.charAt(0).toUpperCase() + opportunity.type.slice(1)} by ${opportunity.organization}\\n\\nApply here: ${opportunity.applyUrl}
+DESCRIPTION:${eventType.charAt(0).toUpperCase() + eventType.slice(1)} by ${org}\\n\\nApply here: ${opportunity.applyUrl || ''}
 LOCATION:${opportunity.location || ''}
-URL:${opportunity.applyUrl}
+URL:${opportunity.applyUrl || ''}
 END:VEVENT
 END:VCALENDAR`;
 

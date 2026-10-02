@@ -7,6 +7,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
 
   plugins: [
@@ -24,10 +30,19 @@ export default defineConfig(({ mode }) => ({
   assetsInclude: [],
 
   build: {
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       external: [
         /\.md$/  // ⛔ exclude all markdown files
       ],
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-lucide': ['lucide-react'],
+        },
+      },
     },
   },
 }));

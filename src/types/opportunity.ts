@@ -12,8 +12,17 @@ export const OPPORTUNITY_CATEGORIES = [
 
 export type OpportunityCategory = typeof OPPORTUNITY_CATEGORIES[number];
 
-/** Legacy type alias — maps to the first 3 categories for backward compat */
-export type OpportunityType = 'hackathon' | 'internship' | 'contest';
+/**
+ * The four primary discovery types surfaced throughout the product.
+ * Keep this separate from the complete taxonomy so the UI can stay focused
+ * while the catalogue can still support specialised programmes.
+ */
+export const CORE_DISCOVERY_CATEGORIES = [
+  'job', 'internship', 'hackathon', 'contest',
+] as const satisfies readonly OpportunityCategory[];
+
+/** Legacy type alias used by older filters and saved-opportunity views. */
+export type OpportunityType = typeof CORE_DISCOVERY_CATEGORIES[number];
 
 export const OPPORTUNITY_MODES = ['online', 'offline', 'hybrid'] as const;
 export type OpportunityMode = typeof OPPORTUNITY_MODES[number];

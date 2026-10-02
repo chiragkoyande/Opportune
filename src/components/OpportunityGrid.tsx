@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Opportunity, OpportunityCategory, CATEGORY_META, OPPORTUNITY_CATEGORIES } from '@/types/opportunity';
+import { Opportunity, OpportunityCategory, CATEGORY_META, CORE_DISCOVERY_CATEGORIES } from '@/types/opportunity';
 import OpportunityCard from './OpportunityCard';
 import LoadingSkeletons from './LoadingSkeletons';
 import {
@@ -17,7 +17,7 @@ interface OpportunityGridProps {
 }
 
 const QUICK_FILTERS: (OpportunityCategory | 'all')[] = [
-  'all', 'hackathon', 'internship', 'contest', 'scholarship', 'fellowship'
+  'all', ...CORE_DISCOVERY_CATEGORIES,
 ];
 
 const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: OpportunityGridProps) => {
@@ -45,10 +45,10 @@ const OpportunityGrid = ({ opportunities, loading, error, onRefresh }: Opportuni
           >
             <div className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-secondary/40 px-4 py-1.5 text-xs font-medium text-muted-foreground mb-4">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span>Latest Opportunities</span>
+              <span>Jobs, internships, hackathons & contests</span>
             </div>
             <h2 className="mb-3 font-display text-2xl md:text-3xl font-bold text-foreground">
-              Discover What's <span className="text-gradient">Trending</span>
+              Find Your Next <span className="text-gradient">Opportunity</span>
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               {loading

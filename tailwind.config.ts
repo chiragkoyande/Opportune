@@ -52,6 +52,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        job: {
+          DEFAULT: "hsl(var(--job))",
+          foreground: "hsl(var(--job-foreground))",
+          glow: "hsl(var(--job-glow))",
+        },
         hackathon: {
           DEFAULT: "hsl(var(--hackathon))",
           foreground: "hsl(var(--hackathon-foreground))",

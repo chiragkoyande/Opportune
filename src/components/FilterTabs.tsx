@@ -1,5 +1,5 @@
 import { OpportunityType } from '@/types/opportunity';
-import { Rocket, Briefcase, Trophy, LayoutGrid } from 'lucide-react';
+import { Rocket, Briefcase, Trophy, LayoutGrid, Building2 } from 'lucide-react';
 
 interface FilterTabsProps {
   activeFilter: OpportunityType | 'all';
@@ -8,31 +8,38 @@ interface FilterTabsProps {
 
 const FilterTabs = ({ activeFilter, onFilterChange }: FilterTabsProps) => {
   const tabs = [
-    { 
+    {
       id: 'all' as const, 
       label: 'All', 
       icon: LayoutGrid, 
       activeGradient: 'from-primary to-primary/80',
       activeShadow: 'shadow-glow-sm',
     },
-    { 
-      id: 'hackathon' as const, 
-      label: 'Hackathons', 
-      icon: Rocket, 
+    {
+      id: 'job' as const,
+      label: 'Jobs',
+      icon: Building2,
+      activeGradient: 'from-blue-500 to-blue-400',
+      activeShadow: 'shadow-[0_0_20px_-5px_rgb(59_130_246/0.5)]',
+    },
+    {
+      id: 'hackathon' as const,
+      label: 'Hackathons',
+      icon: Rocket,
       activeGradient: 'from-hackathon to-hackathon/80',
       activeShadow: 'shadow-[0_0_20px_-5px_hsl(var(--hackathon)/0.5)]',
     },
-    { 
-      id: 'internship' as const, 
-      label: 'Internships', 
-      icon: Briefcase, 
+    {
+      id: 'internship' as const,
+      label: 'Internships',
+      icon: Briefcase,
       activeGradient: 'from-internship to-internship/80',
       activeShadow: 'shadow-[0_0_20px_-5px_hsl(var(--internship)/0.5)]',
     },
-    { 
-      id: 'contest' as const, 
-      label: 'Contests', 
-      icon: Trophy, 
+    {
+      id: 'contest' as const,
+      label: 'Contests',
+      icon: Trophy,
       activeGradient: 'from-contest to-contest/80',
       activeShadow: 'shadow-[0_0_20px_-5px_hsl(var(--contest)/0.5)]',
     },

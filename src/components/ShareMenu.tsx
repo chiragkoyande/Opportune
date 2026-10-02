@@ -7,15 +7,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Opportunity } from '@/types/opportunity';
+export interface ShareOpportunityItem {
+  id: string;
+  title: string;
+  type?: string;
+  category?: string;
+  organization?: string;
+  applyUrl?: string;
+}
 
 interface ShareMenuProps {
-  opportunity: Opportunity;
+  opportunity: ShareOpportunityItem;
 }
 
 const ShareMenu = ({ opportunity }: ShareMenuProps) => {
   const shareUrl = `${window.location.origin}?opportunity=${opportunity.id}`;
-  const shareText = `Check out this ${opportunity.type}: ${opportunity.title} by ${opportunity.organization}`;
+  const oppType = opportunity.type || opportunity.category || 'opportunity';
+  const orgName = opportunity.organization || 'Opportune';
+  const shareText = `Check out this ${oppType}: ${opportunity.title} on Opportune`;
 
   const handleShare = (platform: string) => {
     let url = '';

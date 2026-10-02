@@ -12,6 +12,7 @@ import {
   OpportunityFilters,
   DEFAULT_FILTERS,
   CATEGORY_META,
+  CORE_DISCOVERY_CATEGORIES,
   OPPORTUNITY_CATEGORIES,
   OpportunityCategory,
   OpportunityMode,
@@ -58,6 +59,10 @@ const DIFFICULTY_OPTIONS = [
   { value: 'intermediate', label: 'Intermediate' },
   { value: 'advanced', label: 'Advanced' },
 ];
+
+const ADDITIONAL_CATEGORIES = OPPORTUNITY_CATEGORIES.filter(
+  (category) => !CORE_DISCOVERY_CATEGORIES.includes(category as typeof CORE_DISCOVERY_CATEGORIES[number]),
+);
 
 const Explore = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -207,6 +212,36 @@ const Explore = () => {
               </div>
             </div>
 
+            {/* Primary discovery types */}
+            <div className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-card/50 p-2.5">
+              <span className="px-2 text-xs font-medium text-muted-foreground">Browse</span>
+              <Button
+                type="button"
+                variant={filters.category === 'all' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => updateFilter('category', 'all')}
+                className="h-8 rounded-lg text-xs"
+              >
+                All
+              </Button>
+              {CORE_DISCOVERY_CATEGORIES.map((category) => {
+                const active = filters.category === category;
+                return (
+                  <Button
+                    key={category}
+                    type="button"
+                    variant={active ? 'default' : 'ghost'}
+                    size="sm"
+                    aria-pressed={active}
+                    onClick={() => updateFilter('category', active ? 'all' : category)}
+                    className="h-8 rounded-lg text-xs"
+                  >
+                    {CATEGORY_META[category].label}
+                  </Button>
+                );
+              })}
+            </div>
+
             {/* Active Filter Chips */}
             {activeFilterCount > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
@@ -243,14 +278,23 @@ const Explore = () => {
               `}>
                 <div className="sticky top-20 space-y-5">
                   {/* Category Filter */}
-                  <FilterSection title="Category">
+                  <FilterSection title="What are you looking for?">
                     <div className="space-y-1.5">
                       <FilterCheckbox
                         label="All Categories"
                         checked={filters.category === 'all'}
                         onCheckedChange={() => updateFilter('category', 'all')}
                       />
-                      {OPPORTUNITY_CATEGORIES.map((cat) => (
+                      {CORE_DISCOVERY_CATEGORIES.map((cat) => (
+                        <FilterCheckbox
+                          key={cat}
+                          label={CATEGORY_META[cat].label}
+                          checked={filters.category === cat}
+                          onCheckedChange={() => updateFilter('category', filters.category === cat ? 'all' : cat)}
+                        />
+                      ))}
+                      <p className="pt-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">More opportunities</p>
+                      {ADDITIONAL_CATEGORIES.map((cat) => (
                         <FilterCheckbox
                           key={cat}
                           label={CATEGORY_META[cat].label}

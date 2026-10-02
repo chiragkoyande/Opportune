@@ -13,6 +13,7 @@ const CompareModal = ({ open, onOpenChange }: CompareModalProps) => {
   const { compareList } = useCompare();
 
   const typeConfig = {
+    job: { icon: Briefcase, color: 'text-job', bg: 'bg-job/10' },
     hackathon: { icon: Rocket, color: 'text-hackathon', bg: 'bg-hackathon/10' },
     internship: { icon: Briefcase, color: 'text-internship', bg: 'bg-internship/10' },
     contest: { icon: Zap, color: 'text-contest', bg: 'bg-contest/10' },
@@ -20,12 +21,18 @@ const CompareModal = ({ open, onOpenChange }: CompareModalProps) => {
 
   const getTypeConfig = (type: string) => typeConfig[type as keyof typeof typeConfig] || typeConfig.hackathon;
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formatDate = (date: Date | string | undefined | null) => {
+    if (!date) return 'N/A';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const getDaysLeft = (date: Date) => {
-    return Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const getDaysLeft = (date: Date | string | undefined | null) => {
+    if (!date) return 0;
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return 0;
+    return Math.ceil((d.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
   };
 
   return (

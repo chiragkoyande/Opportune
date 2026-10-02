@@ -3,12 +3,8 @@ import { ArrowRight, Sparkles, Search, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { usePlatformStats } from '@/hooks/useOpportunities';
-import { CATEGORY_META, OPPORTUNITY_CATEGORIES } from '@/types/opportunity';
+import { CATEGORY_META, CORE_DISCOVERY_CATEGORIES } from '@/types/opportunity';
 import FloatingParticles from './FloatingParticles';
-
-const QUICK_CATEGORIES = [
-  'hackathon', 'internship', 'contest', 'scholarship', 'fellowship', 'open_source',
-] as const;
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -64,8 +60,8 @@ const Hero = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mb-8 text-base text-muted-foreground md:text-lg max-w-2xl mx-auto leading-relaxed"
           >
-            The modern platform to discover Hackathons, Internships, Coding Contests,
-            Fellowships, Scholarships, Open Source Programs and early career opportunities.
+            Find the next role or challenge worth pursuing — jobs, internships,
+            hackathons, and coding contests in one focused place.
           </motion.p>
 
           {/* Search Bar */}
@@ -81,7 +77,7 @@ const Hero = () => {
               <input
                 name="search"
                 type="text"
-                placeholder="Search hackathons, internships, contests..."
+                placeholder="Search jobs, internships, hackathons, contests..."
                 className="
                   w-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm
                   py-4 pl-14 pr-32 text-sm text-foreground
@@ -109,7 +105,7 @@ const Hero = () => {
             className="flex flex-wrap justify-center gap-2 mb-14"
           >
             <span className="text-xs text-muted-foreground/60 self-center mr-1">Explore:</span>
-            {QUICK_CATEGORIES.map((catId) => {
+            {CORE_DISCOVERY_CATEGORIES.map((catId) => {
               const cat = CATEGORY_META[catId];
               return (
                 <button
