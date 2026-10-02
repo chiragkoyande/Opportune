@@ -4,21 +4,21 @@ import OpportunityGrid from '@/components/OpportunityGrid';
 import Footer from '@/components/Footer';
 import CompareBar from '@/components/CompareBar';
 import { CompareProvider } from '@/hooks/useCompare';
-import { useOpportunities } from '@/hooks/useOpportunities';
+import { useFeaturedOpportunities } from '@/hooks/useOpportunities';
 
 const Index = () => {
-  const { opportunities, loading, error, refetch } = useOpportunities();
+  const { data: opportunities = [], isLoading, error, refetch } = useFeaturedOpportunities();
 
   return (
     <CompareProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main>
+        <main className="flex-1">
           <Hero />
-          <OpportunityGrid 
-            opportunities={opportunities} 
-            loading={loading} 
-            error={error}
+          <OpportunityGrid
+            opportunities={opportunities}
+            loading={isLoading}
+            error={error ? (error as Error).message : null}
             onRefresh={refetch}
           />
         </main>

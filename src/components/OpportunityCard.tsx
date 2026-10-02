@@ -1,377 +1,268 @@
-import { useState, useEffect, memo } from 'react';
-import { Opportunity } from '@/types/opportunity';
+import { memo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Opportunity, CATEGORY_META, getDaysUntilDeadline, formatDeadline, isUrgentDeadline } from '@/types/opportunity';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Calendar,
-  MapPin,
-  Trophy,
-  ExternalLink,
-  Sparkles,
-  Rocket,
-  Briefcase,
-  Zap,
-  Heart,
-  Clock,
-  Lightbulb,
-  CheckCircle2,
-  Loader2,
-  GitCompare
+  Calendar, MapPin, Trophy, ExternalLink, Heart, Clock,
+  Rocket, Briefcase, Zap, GraduationCap, GitBranch, Award,
+  Building2, Microscope, School, BookOpen, Banknote,
+  CheckCircle2, Users, Globe, ArrowRight
 } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
-import { useAuth } from '@/hooks/useAuth';
-import { useCompare } from '@/hooks/useCompare';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import TiltCard from './TiltCard';
-import ShareMenu from './ShareMenu';
-import CalendarMenu from './CalendarMenu';
+import { motion } from 'framer-motion';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  variant?: 'grid' | 'list';
 }
 
-const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
+/** Map category to Lucide icon component */
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  hackathon: Rocket,
+  internship: Briefcase,
+  job: Building2,
+  contest: Zap,
+  scholarship: GraduationCap,
+  fellowship: Award,
+  open_source: GitBranch,
+  research: Microscope,
+  campus_hiring: School,
+  competition: Trophy,
+  grant: Banknote,
+  bootcamp: BookOpen,
+};
+
+const OpportunityCard = ({ opportunity, variant = 'grid' }: OpportunityCardProps) => {
+  const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { user } = useAuth();
-  const { addToCompare, removeFromCompare, isInCompare, canAddMore } = useCompare();
   const favorited = isFavorite(opportunity.id);
-  const inCompare = isInCompare(opportunity.id);
-  const [showIdeas, setShowIdeas] = useState(false);
-  const [ideas, setIdeas] = useState<string[]>([]);
-  const [loadingIdeas, setLoadingIdeas] = useState(false);
 
-  const daysUntilDeadline = Math.ceil(
-    (opportunity.deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const isUrgent = daysUntilDeadline <= 5 && daysUntilDeadline > 0;
+  const daysLeft = getDaysUntilDeadline(opportunity.deadline);
+  const urgent = isUrgentDeadline(opportunity.deadline);
+  const expired = daysLeft < 0;
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const meta = CATEGORY_META[opportunity.category] || CATEGORY_META.hackathon;
+  const CategoryIcon = CATEGORY_ICONS[opportunity.category] || Rocket;
+
+  const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleFavorite(opportunity);
+    e.preventDefault();
+    // Convert to legacy format for favorites system
+    toggleFavorite({
+      id: opportunity.id,
+      title: opportunity.title,
+      type: opportunity.category as 'hackathon' | 'internship' | 'contest',
+      organization: opportunity.organization,
+      description: opportunity.description,
+      deadline: new Date(opportunity.deadline),
+      applyUrl: opportunity.apply_url,
+      location: opportunity.location || undefined,
+      prize: opportunity.prize || undefined,
+      tags: opportunity.tags,
+      source: opportunity.source || '',
+    });
   };
 
-  const handleCompareClick = (e: React.MouseEvent) => {
+  const handleCardClick = () => {
+    if (opportunity.slug) {
+      navigate(`/opportunity/${opportunity.slug}`);
+    }
+  };
+
+  const handleApply = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (inCompare) {
-      removeFromCompare(opportunity.id);
-    } else if (canAddMore) {
-      addToCompare(opportunity);
-      toast.success(`Added "${opportunity.title}" to compare`);
-    } else {
-      toast.error('You can compare up to 3 opportunities');
-    }
   };
-
-  // Fetch AI-generated ideas when dialog opens
-  useEffect(() => {
-    if (showIdeas && ideas.length === 0 && !loadingIdeas) {
-      fetchIdeas();
-    }
-  }, [showIdeas]);
-
-  const fetchIdeas = async () => {
-    setLoadingIdeas(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-ideas', {
-        body: {
-          opportunity: {
-            title: opportunity.title,
-            organization: opportunity.organization,
-            description: opportunity.description,
-            type: opportunity.type,
-            tags: opportunity.tags,
-            prize: opportunity.prize,
-            location: opportunity.location
-          }
-        }
-      });
-
-      if (error) {
-        setIdeas(getFallbackIdeas());
-        return;
-      }
-
-      if (data?.ideas && Array.isArray(data.ideas) && data.ideas.length > 0) {
-        setIdeas(data.ideas);
-      } else {
-        // Use fallback if AI returns empty or invalid response
-        setIdeas(getFallbackIdeas());
-      }
-    } catch {
-      // Silent fallback - use pre-defined ideas
-      setIdeas(getFallbackIdeas());
-    } finally {
-      setLoadingIdeas(false);
-    }
-  };
-
-  const getFallbackIdeas = () => {
-    if (opportunity.type === 'internship') {
-      return [
-        `Research ${opportunity.organization}'s recent projects and tech stack`,
-        'Practice DSA problems on LeetCode (focus on medium difficulty)',
-        'Prepare 2-3 projects to discuss in behavioral rounds',
-        'Review system design basics if applying for senior roles'
-      ];
-    } else if (opportunity.type === 'hackathon') {
-      return [
-        `AI-powered tool that solves a real problem in ${opportunity.tags[0] || 'your domain'}`,
-        'Sustainability tracker using IoT sensors and data visualization',
-        'Decentralized app for community engagement or voting',
-        'Mental health support chatbot with sentiment analysis'
-      ];
-    } else {
-      return [
-        'Start with easier problems to build confidence and score',
-        `Practice similar past problems from ${opportunity.organization}`,
-        'Keep a template ready for common algorithms',
-        'Read all problems first before diving into solutions'
-      ];
-    }
-  };
-
-  const typeConfig = {
-    hackathon: {
-      icon: Rocket,
-      label: 'Hackathon',
-      gradient: 'from-hackathon to-hackathon/70',
-      textColor: 'text-hackathon',
-      bgColor: 'bg-hackathon/10',
-      borderColor: 'border-hackathon/30',
-      glowColor: 'group-hover:shadow-[0_0_40px_-10px_hsl(var(--hackathon)/0.5)]',
-    },
-    internship: {
-      icon: Briefcase,
-      label: 'Internship',
-      gradient: 'from-internship to-internship/70',
-      textColor: 'text-internship',
-      bgColor: 'bg-internship/10',
-      borderColor: 'border-internship/30',
-      glowColor: 'group-hover:shadow-[0_0_40px_-10px_hsl(var(--internship)/0.5)]',
-    },
-    contest: {
-      icon: Zap,
-      label: 'Contest',
-      gradient: 'from-contest to-contest/70',
-      textColor: 'text-contest',
-      bgColor: 'bg-contest/10',
-      borderColor: 'border-contest/30',
-      glowColor: 'group-hover:shadow-[0_0_40px_-10px_hsl(var(--contest)/0.5)]',
-    },
-  };
-
-  const config = typeConfig[opportunity.type];
-  const Icon = config.icon;
 
   return (
-    <TiltCard tiltMaxAngle={8} glareEnable={true}>
-      <div
-        className={`
-          group relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm
-          transition-all duration-500 h-full
-          ${config.glowColor}
-          ${isUrgent ? 'glow-urgent' : ''}
-        `}
-      >
-        {/* Top gradient accent */}
-        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
+    <motion.article
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      onClick={handleCardClick}
+      className={`
+        group relative overflow-hidden rounded-2xl border border-border/40
+        bg-card/90 backdrop-blur-sm cursor-pointer
+        transition-all duration-500 h-full
+        hover:border-border/70 hover:shadow-lg hover:shadow-primary/5
+        hover:-translate-y-1
+        ${urgent ? 'ring-1 ring-urgent/20' : ''}
+      `}
+    >
+      {/* Top accent line */}
+      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${meta.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
 
-        {/* Card shine effect */}
-        <div className="absolute inset-0 bg-card-shine opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      {/* Shine effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
 
-        <div className="relative p-5">
-          {/* Header */}
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={`${config.bgColor} ${config.textColor} ${config.borderColor} border font-medium`}>
-                <Icon className="mr-1.5 h-3 w-3" />
-                {config.label}
-              </Badge>
-              {isUrgent && (
-                <Badge className="bg-urgent/10 text-urgent border border-urgent/30 font-medium animate-pulse">
-                  <Clock className="mr-1 h-3 w-3" />
-                  {daysUntilDeadline}d left
-                </Badge>
+      <div className="relative p-5">
+        {/* Header row: Logo + Category + Actions */}
+        <div className="flex items-start justify-between gap-3 mb-3.5">
+          <div className="flex items-center gap-3">
+            {/* Organization Logo */}
+            <div className={`
+              flex h-10 w-10 items-center justify-center rounded-xl
+              bg-gradient-to-br ${meta.gradient} shadow-sm
+              transition-transform duration-300 group-hover:scale-105
+            `}>
+              {opportunity.logo_url ? (
+                <img
+                  src={opportunity.logo_url}
+                  alt={opportunity.organization}
+                  className="h-6 w-6 rounded object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <CategoryIcon className="h-5 w-5 text-white" />
               )}
             </div>
-            <div className="flex items-center gap-1">
-              <ShareMenu opportunity={opportunity} />
-              <CalendarMenu opportunity={opportunity} />
-              <button
-                onClick={handleCompareClick}
-                className={`p-2 rounded-full transition-all duration-300 ${inCompare
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
-                  }`}
-                aria-label={inCompare ? 'Remove from compare' : 'Add to compare'}
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground truncate max-w-[140px]">
+                  {opportunity.organization}
+                </span>
+                {opportunity.organization_verified && (
+                  <CheckCircle2 className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                )}
+              </div>
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-1.5 py-0 h-4 mt-0.5 border-border/40 font-medium`}
               >
-                <GitCompare className={`h-4 w-4 transition-transform ${inCompare ? 'scale-110' : 'hover:scale-110'}`} />
-              </button>
-              <button
-                onClick={handleFavoriteClick}
-                className={`p-2 rounded-full transition-all duration-300 ${favorited
-                  ? 'text-urgent bg-urgent/10'
-                  : 'text-muted-foreground hover:text-urgent hover:bg-urgent/10'
-                  }`}
-                aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Heart className={`h-4 w-4 transition-transform ${favorited ? 'fill-current scale-110' : 'hover:scale-110'}`} />
-              </button>
+                {meta.label}
+              </Badge>
             </div>
           </div>
 
-          {/* Title & Org */}
-          <h3 className="mb-1 font-display text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {opportunity.title}
-          </h3>
-          <p className="mb-3 text-sm font-medium text-muted-foreground flex items-center gap-2">
-            {opportunity.organization}
-            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-              {opportunity.source}
+          {/* Favorite button */}
+          <button
+            onClick={handleFavorite}
+            className={`
+              p-1.5 rounded-full transition-all duration-300 flex-shrink-0
+              ${favorited
+                ? 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/20'
+                : 'text-muted-foreground/50 hover:text-rose-500 hover:bg-rose-500/10'
+              }
+            `}
+            aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart className={`h-4 w-4 transition-all ${favorited ? 'fill-current scale-110' : 'group-hover:scale-105'}`} />
+          </button>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-display text-base font-bold text-foreground leading-snug line-clamp-2 mb-1.5 group-hover:text-primary transition-colors duration-300">
+          {opportunity.title}
+        </h3>
+
+        {/* Description */}
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3.5">
+          {opportunity.description}
+        </p>
+
+        {/* Metadata pills */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-3.5">
+          {/* Deadline */}
+          <span className={`
+            inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium
+            ${urgent
+              ? 'bg-urgent/10 text-urgent'
+              : expired
+                ? 'bg-muted text-muted-foreground line-through'
+                : 'bg-secondary/70 text-secondary-foreground'
+            }
+          `}>
+            {urgent ? <Clock className="h-2.5 w-2.5" /> : <Calendar className="h-2.5 w-2.5" />}
+            {formatDeadline(opportunity.deadline)}
+          </span>
+
+          {/* Location */}
+          {opportunity.location && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-secondary/70 text-secondary-foreground font-medium">
+              <MapPin className="h-2.5 w-2.5" />
+              {opportunity.location.length > 20 ? opportunity.location.slice(0, 20) + '…' : opportunity.location}
             </span>
-          </p>
+          )}
 
-          {/* Description */}
-          <p className="mb-4 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-            {opportunity.description}
-          </p>
-
-          {/* Meta info */}
-          <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
-            <span className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${isUrgent ? 'bg-urgent/10 text-urgent' : 'bg-secondary text-secondary-foreground'}`}>
-              <Calendar className="h-3 w-3" />
-              {daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : 'Deadline passed'}
+          {/* Mode */}
+          {opportunity.mode && opportunity.mode !== 'online' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-secondary/70 text-secondary-foreground font-medium capitalize">
+              <Globe className="h-2.5 w-2.5" />
+              {opportunity.mode}
             </span>
-            {opportunity.location && (
-              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                <MapPin className="h-3 w-3" />
-                {opportunity.location}
-              </span>
-            )}
-            {opportunity.prize && (
-              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-internship/10 text-internship font-medium">
-                <Trophy className="h-3 w-3" />
-                {opportunity.prize}
-              </span>
-            )}
-          </div>
+          )}
 
-          {/* Tags */}
-          <div className="mb-5 flex flex-wrap gap-1.5">
+          {/* Prize */}
+          {opportunity.prize && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold">
+              <Trophy className="h-2.5 w-2.5" />
+              {opportunity.prize}
+            </span>
+          )}
+
+          {/* Team size */}
+          {opportunity.team_size && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-secondary/70 text-secondary-foreground font-medium">
+              <Users className="h-2.5 w-2.5" />
+              {opportunity.team_size}
+            </span>
+          )}
+        </div>
+
+        {/* Tags */}
+        {opportunity.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
             {opportunity.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                className="rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
               >
-                #{tag}
+                {tag}
               </span>
             ))}
             {opportunity.tags.length > 3 && (
-              <span className="text-xs text-muted-foreground px-1">
+              <span className="text-[10px] text-muted-foreground/60 px-1 self-center">
                 +{opportunity.tags.length - 3}
               </span>
             )}
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 border-border/50 bg-secondary/50 hover:bg-secondary font-medium text-sm h-10"
-              onClick={() => setShowIdeas(true)}
-            >
-              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-accent" />
-              {opportunity.type === 'internship' ? 'Prep Guide' : 'Get Ideas'}
-            </Button>
-            <Button
-              size="sm"
-              className={`flex-1 bg-gradient-to-r ${config.gradient} text-foreground hover:opacity-90 font-medium text-sm h-10`}
-              asChild
-            >
-              <a href={opportunity.applyUrl} target="_blank" rel="noopener noreferrer">
-                Apply Now
-                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-              </a>
-            </Button>
-          </div>
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-9 text-xs border-border/40 bg-secondary/30 hover:bg-secondary/60 font-medium gap-1.5 group/btn"
+            onClick={handleCardClick}
+          >
+            View Details
+            <ArrowRight className="h-3 w-3 transition-transform group-hover/btn:translate-x-0.5" />
+          </Button>
+          <Button
+            size="sm"
+            className={`flex-1 h-9 text-xs bg-gradient-to-r ${meta.gradient} text-white hover:opacity-90 font-medium shadow-sm`}
+            asChild
+            onClick={handleApply}
+          >
+            <a href={opportunity.apply_url} target="_blank" rel="noopener noreferrer">
+              Apply
+              <ExternalLink className="ml-1 h-3 w-3" />
+            </a>
+          </Button>
         </div>
-
-        {/* Ideas/Prep Guide Dialog */}
-        <Dialog open={showIdeas} onOpenChange={setShowIdeas}>
-          <DialogContent className="max-w-md bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-foreground">
-                <Lightbulb className="h-5 w-5 text-accent" />
-                {opportunity.type === 'internship' ? 'Prep Guide' : 'Project Ideas'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
-                <h4 className="font-semibold text-foreground mb-1">{opportunity.title}</h4>
-                <p className="text-sm text-muted-foreground">{opportunity.organization}</p>
-              </div>
-
-              {loadingIdeas ? (
-                <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Generating personalized ideas...</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-foreground flex items-center gap-2">
-                    {opportunity.type === 'internship' ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 text-internship" />
-                        Interview Prep Tips
-                      </>
-                    ) : opportunity.type === 'hackathon' ? (
-                      <>
-                        <Rocket className="h-4 w-4 text-hackathon" />
-                        Project Ideas
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 text-contest" />
-                        Contest Tips
-                      </>
-                    )}
-                  </h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    {ideas.map((idea, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className={
-                          opportunity.type === 'internship' ? 'text-internship' :
-                            opportunity.type === 'hackathon' ? 'text-hackathon' : 'text-contest'
-                        }>•</span>
-                        {idea}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <Button
-                className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
-                asChild
-              >
-                <a href={opportunity.applyUrl} target="_blank" rel="noopener noreferrer">
-                  Apply Now
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </a>
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
-    </TiltCard>
+
+      {/* Featured badge */}
+      {opportunity.featured && (
+        <div className="absolute top-3 right-3">
+          <Badge className="bg-amber-500/90 text-white text-[10px] px-1.5 py-0 h-4 font-medium shadow-sm">
+            Featured
+          </Badge>
+        </div>
+      )}
+    </motion.article>
   );
 };
 

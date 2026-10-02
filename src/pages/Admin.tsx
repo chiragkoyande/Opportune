@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
+import { useCareerSyncAdmin } from '@/hooks/useCareerJobs';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +21,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminUserManagement from '@/components/AdminUserManagement';
 import { 
+  Activity,
+  AlertTriangle,
   ArrowLeft, 
+  Building2,
   Plus, 
   Trash2, 
   Edit, 
@@ -31,7 +35,8 @@ import {
   Briefcase,
   Users,
   Zap,
-  Calendar
+  Calendar,
+  Database
 } from 'lucide-react';
 
 interface OpportunityForm {
@@ -89,6 +94,7 @@ const Admin = () => {
   const [form, setForm] = useState<OpportunityForm>(emptyForm);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const syncAdminQuery = useCareerSyncAdmin(Boolean(isAdmin));
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -298,10 +304,14 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="opportunities" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="opportunities" className="gap-2">
               <Rocket className="h-4 w-4" />
               Opportunities
+            </TabsTrigger>
+            <TabsTrigger value="sync" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Sync Health
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
@@ -602,6 +612,10 @@ const Admin = () => {
         )}
           </TabsContent>
 
+          <TabsContent value="sync">
+            <CareerSyncPanel query={syncAdminQuery} />
+          </TabsContent>
+
           <TabsContent value="users">
             <AdminUserManagement />
           </TabsContent>
@@ -610,5 +624,132 @@ const Admin = () => {
     </div>
   );
 };
+
+function CareerSyncPanel({ query }: { query: ReturnType<typeof useCareerSyncAdmin> }) {
+  if (query.isLoading) {
+    return <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>;
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-5 text-sm text-destructive">
+        Unable to load sync health. Confirm the career discovery migration is applied and admin RLS policies are active.
+      </div>
+    );
+  }
+
+  const stats = query.data.stats;
+  const platforms = typeof stats.platforms === 'object' && stats.platforms !== null
+    ? stats.platforms as Record<string, number>
+    : {};
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-4">
+        <AdminMetric icon={<Database className="h-4 w-4" />} label="Open jobs" value={Number(stats.open_jobs ?? 0)} />
+        <AdminMetric icon={<Building2 className="h-4 w-4" />} label="Companies" value={Number(stats.companies ?? 0)} />
+        <AdminMetric icon={<Briefcase className="h-4 w-4" />} label="Internships" value={Number(stats.internships ?? 0)} />
+        <AdminMetric icon={<AlertTriangle className="h-4 w-4" />} label="Stale companies" value={query.data.health?.stale_company_count ?? 0} />
+      </div>
+
+      <section className="rounded-xl border-2 border-foreground/10 bg-card p-5">
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">API health</h2>
+            <p className="text-sm text-muted-foreground">
+              Last run {formatAdminDate(query.data.health?.last_run_at)} · status {query.data.health?.last_status ?? 'unknown'}
+            </p>
+          </div>
+          <Button variant="outline" className="rounded-full" onClick={() => query.refetch()}>
+            Refresh
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(platforms).map(([platform, count]) => (
+            <Badge key={platform} variant="outline" className="rounded-full capitalize">
+              {platform.replace('_', ' ')} · {count}
+            </Badge>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section className="rounded-xl border-2 border-foreground/10 bg-card p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Recent sync runs</h2>
+          <div className="space-y-3">
+            {query.data.runs.map((run) => (
+              <div key={run.id} className="rounded-lg border border-border/60 bg-background p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant={run.status === 'success' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}>
+                    {run.status}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{formatAdminDate(run.started_at)}</span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {run.companies_checked} companies · {run.jobs_seen} seen · {run.jobs_upserted} upserted · {run.jobs_closed} closed
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border-2 border-foreground/10 bg-card p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Recent errors</h2>
+          <div className="space-y-3">
+            {query.data.errors.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">No recent sync errors.</p>
+            ) : query.data.errors.map((error) => (
+              <div key={error.id} className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="outline">{error.stage}</Badge>
+                  <span className="text-xs text-muted-foreground">{formatAdminDate(error.created_at)}</span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-sm text-destructive">{error.message}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-xl border-2 border-foreground/10 bg-card p-5">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Company source management</h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {query.data.companies.map((company) => (
+            <div key={company.id} className="rounded-lg border border-border/60 bg-background p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{company.name}</h3>
+                  <p className="text-xs text-muted-foreground">{company.domain}</p>
+                </div>
+                <Badge variant="outline" className="rounded-full capitalize">{company.sync_status}</Badge>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span>{company.ats_platform ?? 'unknown ATS'}</span>
+                <span>·</span>
+                <span>{company.hiring_status.replace('_', ' ')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AdminMetric({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
+  return (
+    <div className="rounded-xl border-2 border-foreground/10 bg-card p-4">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</div>
+      <div className="text-2xl font-bold text-foreground">{value}</div>
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function formatAdminDate(value: string | null | undefined): string {
+  if (!value) return 'never';
+  return new Date(value).toLocaleString();
+}
 
 export default Admin;
