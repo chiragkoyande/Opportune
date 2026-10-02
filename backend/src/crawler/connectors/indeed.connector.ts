@@ -191,7 +191,7 @@ async function tryScrapeIndeedQuery(
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-IN,en;q=0.9',
       },
-      timeout: 6000,
+      timeout: 1500,
     });
 
     if (
@@ -256,11 +256,14 @@ export async function crawlIndeedIndia(): Promise<CrawledItemRaw[]> {
   logger.info('🔍 Starting Indeed India discovery (jobs & internships)...');
   const items: CrawledItemRaw[] = [];
 
-  // Attempt live crawl across top queries
+  // Attempt live crawl across top queries (fail fast if Cloudflare challenge detected)
   for (const q of INDEED_SEARCH_QUERIES) {
     const live = await tryScrapeIndeedQuery(q.q, q.category);
     if (live.length > 0) {
       items.push(...live);
+    } else {
+      // First probe failed/challenged, break immediately so fallback applies fast
+      break;
     }
   }
 

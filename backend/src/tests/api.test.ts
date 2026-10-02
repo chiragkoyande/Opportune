@@ -315,7 +315,7 @@ describe('OPPORTUNE V4 API Test Suite', () => {
         expect(item.applyUrl).toMatch(/^https?:\/\//);
         expect(item.rawLocation).toBeDefined();
       }
-    });
+    }, 10000);
 
     it('GET /api/v1/admin/crawler/sources lists linkedin, naukri, and indeed', async () => {
       const res = await request(app).get('/api/v1/admin/crawler/sources');
