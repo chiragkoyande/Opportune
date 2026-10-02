@@ -1,169 +1,165 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Search, TrendingUp } from 'lucide-react';
+import { ArrowRight, Rocket, Trophy, Briefcase, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { usePlatformStats } from '@/hooks/useOpportunities';
-import { CATEGORY_META, OPPORTUNITY_CATEGORIES } from '@/types/opportunity';
 import FloatingParticles from './FloatingParticles';
-
-const QUICK_CATEGORIES = [
-  'hackathon', 'internship', 'contest', 'scholarship', 'fellowship', 'open_source',
-] as const;
+import FloatingIcons from './FloatingIcons';
+import CursorSparkles from './CursorSparkles';
+import TypingAnimation from './TypingAnimation';
+import TiltCard from './TiltCard';
 
 const Hero = () => {
-  const navigate = useNavigate();
-  const { data: stats } = usePlatformStats();
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const query = formData.get('search') as string;
-    if (query?.trim()) {
-      navigate(`/explore?q=${encodeURIComponent(query.trim())}`);
-    } else {
-      navigate('/explore');
-    }
-  };
-
   return (
-    <section className="relative overflow-hidden bg-mesh noise-bg">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-radial from-primary/15 via-primary/5 to-transparent rounded-full blur-3xl animate-blob" />
-      <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-gradient-radial from-accent/10 via-accent/3 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-2s' }} />
+    <section className="relative overflow-hidden py-20 md:py-32 bg-mesh noise-bg">
+      {/* Background Effects - Animated Blobs */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-50" />
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-primary/20 via-primary/5 to-transparent rounded-full blur-3xl animate-blob" />
+      <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-gradient-radial from-accent/15 via-accent/5 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-2s' }} />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-hackathon/10 via-hackathon/3 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-4s' }} />
+
+      {/* Floating Particles */}
       <FloatingParticles />
 
-      <div className="container relative z-10 py-20 md:py-28 lg:py-36">
+      {/* Floating Coding Icons */}
+      <FloatingIcons />
+
+      {/* Cursor Sparkles */}
+      <CursorSparkles />
+
+      <div className="container relative z-10">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Discover opportunities from 50+ platforms</span>
-          </motion.div>
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary animate-fade-in float-badge">
+            <Sparkles className="h-4 w-4" />
+            <span>AI-Powered Opportunity Discovery</span>
+          </div>
 
           {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-5 font-display text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
-          >
-            <span className="text-foreground">Your Career, </span>
-            <span className="text-gradient-animated">Accelerated</span>
-          </motion.h1>
+          <h1 className="mb-6 font-display text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
+            <TypingAnimation text="Never Miss an" speed={70} delay={300} />
+            <span className="block mt-2 text-gradient-animated">
+              <TypingAnimation text="Opportunity Again" speed={70} delay={1400} />
+            </span>
+          </h1>
 
           {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mb-8 text-base text-muted-foreground md:text-lg max-w-2xl mx-auto leading-relaxed"
-          >
-            The modern platform to discover Hackathons, Internships, Coding Contests,
-            Fellowships, Scholarships, Open Source Programs and early career opportunities.
-          </motion.p>
+          <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            Discover hackathons, internships, and coding contests from
+            <span className="text-foreground font-medium"> 50+ platforms</span> — all in one place.
+          </p>
 
-          {/* Search Bar */}
-          <motion.form
-            onSubmit={handleSearch}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mb-6 mx-auto max-w-2xl"
-          >
-            <div className="relative group">
-              <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-              <input
-                name="search"
-                type="text"
-                placeholder="Search hackathons, internships, contests..."
-                className="
-                  w-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm
-                  py-4 pl-14 pr-32 text-sm text-foreground
-                  placeholder:text-muted-foreground/60
-                  focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40
-                  transition-all shadow-lg shadow-black/5
-                "
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 rounded-xl shadow-glow-sm font-medium"
-              >
-                Search
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </motion.form>
-
-          {/* Quick Categories */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-2 mb-14"
-          >
-            <span className="text-xs text-muted-foreground/60 self-center mr-1">Explore:</span>
-            {QUICK_CATEGORIES.map((catId) => {
-              const cat = CATEGORY_META[catId];
-              return (
-                <button
-                  key={catId}
-                  onClick={() => navigate(`/explore?category=${catId}`)}
-                  className="
-                    inline-flex items-center gap-1.5 rounded-full px-3 py-1.5
-                    text-xs font-medium text-muted-foreground
-                    bg-secondary/40 border border-border/30
-                    hover:bg-secondary/70 hover:text-foreground hover:border-border/50
-                    transition-all duration-200
-                  "
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </motion.div>
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <Button
+              size="lg"
+              className="group bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 shadow-glow font-semibold text-base px-8 h-12 animate-breathe ripple"
+              onClick={() => document.getElementById('opportunities')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Explore Opportunities
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-border bg-card shadow-card-hover hover:bg-secondary font-semibold text-base px-8 h-12"
+              onClick={() => document.getElementById('opportunities')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <Zap className="mr-2 h-4 w-4 text-accent" />
+              View Trending
+            </Button>
+          </div>
 
           {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-xl mx-auto"
-          >
-            <StatItem value={stats?.total_opportunities || 500} suffix="+" label="Opportunities" />
-            <StatItem value={12} label="Categories" />
-            <StatItem value={stats?.sources_count || 50} suffix="+" label="Sources" />
-            <StatItem value="24/7" label="Updates" isText />
-          </motion.div>
+          <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+            <div className="text-center">
+              <p className="font-display text-3xl font-bold text-gradient">500+</p>
+              <p className="text-sm text-muted-foreground mt-1">Opportunities</p>
+            </div>
+            <div className="text-center">
+              <p className="font-display text-3xl font-bold text-gradient">50+</p>
+              <p className="text-sm text-muted-foreground mt-1">Platforms</p>
+            </div>
+            <div className="text-center">
+              <p className="font-display text-3xl font-bold text-gradient">24/7</p>
+              <p className="text-sm text-muted-foreground mt-1">Updates</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="mt-20 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+          <FeatureCard
+            icon={<Rocket className="h-6 w-6" />}
+            title="Hackathons"
+            description="MLH, Devfolio, ETHIndia & more. Build, learn, and win prizes."
+            color="hackathon"
+            delay="0.8s"
+          />
+          <FeatureCard
+            icon={<Briefcase className="h-6 w-6" />}
+            title="Internships"
+            description="FAANG, startups, remote opportunities. Launch your career."
+            color="internship"
+            delay="1s"
+          />
+          <FeatureCard
+            icon={<Trophy className="h-6 w-6" />}
+            title="Coding Contests"
+            description="LeetCode, Codeforces, CodeChef. Sharpen your skills."
+            color="contest"
+            delay="1.2s"
+          />
         </div>
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };
 
-interface StatItemProps {
-  value: number | string;
-  suffix?: string;
-  label: string;
-  isText?: boolean;
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: 'hackathon' | 'internship' | 'contest';
+  delay: string;
 }
 
-const StatItem = ({ value, suffix = '', label, isText }: StatItemProps) => (
-  <div className="text-center">
-    <p className="font-display text-2xl md:text-3xl font-bold text-gradient">
-      {isText ? value : <>{value}{suffix}</>}
-    </p>
-    <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-  </div>
-);
+const FeatureCard = ({ icon, title, description, color, delay }: FeatureCardProps) => {
+  const colorClasses = {
+    hackathon: 'from-hackathon to-hackathon/70 shadow-[0_0_25px_-5px_hsl(var(--hackathon)/0.3)]',
+    internship: 'from-internship to-internship/70 shadow-[0_0_25px_-5px_hsl(var(--internship)/0.3)]',
+    contest: 'from-contest to-contest/70 shadow-[0_0_25px_-5px_hsl(var(--contest)/0.3)]',
+  };
+
+  const textColors = {
+    hackathon: 'text-hackathon',
+    internship: 'text-internship',
+    contest: 'text-contest',
+  };
+
+  return (
+    <TiltCard
+      className="animate-fade-in-up"
+      style={{ animationDelay: delay }}
+      tiltMaxAngle={12}
+    >
+      <div className="group relative rounded-2xl border border-border bg-card p-6 overflow-hidden h-full card-hover">
+        {/* Glow effect on hover */}
+        <div className={`absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-500 bg-gradient-to-br ${colorClasses[color].split(' ')[0]} ${colorClasses[color].split(' ')[1]}`} />
+
+        <div className="relative z-10">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${colorClasses[color]} mb-4 transform-gpu`}>
+            <span className="text-white">
+              {icon}
+            </span>
+          </div>
+          <h3 className={`mb-2 font-display text-xl font-bold ${textColors[color]}`}>
+            {title}
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {description}
+          </p>
+        </div>
+      </div>
+    </TiltCard>
+  );
+};
 
 export default Hero;

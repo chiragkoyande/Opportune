@@ -31,18 +31,6 @@ interface ScrapedHackathon {
   tags?: string[];
 }
 
-interface FirecrawlSearchResult {
-  title?: string;
-  description?: string;
-  markdown?: string;
-  url?: string;
-}
-
-interface FirecrawlSearchResponse {
-  success?: boolean;
-  data?: FirecrawlSearchResult[];
-}
-
 // Scrape hackathons from a platform using Firecrawl
 async function scrapeHackathonsFromPlatform(
   apiKey: string,
@@ -75,12 +63,12 @@ async function scrapeHackathonsFromPlatform(
       return opportunities;
     }
 
-    const data = await response.json() as FirecrawlSearchResponse;
+    const data = await response.json();
     console.log(`Found ${data.data?.length || 0} results for ${source}`);
 
     // Parse the search results
     if (data.success && data.data) {
-      data.data.forEach((result, index) => {
+      data.data.forEach((result: any, index: number) => {
         // Extract info from search result
         const title = result.title || `Hackathon from ${source}`;
         const description = result.description || result.markdown?.substring(0, 200) || 'Join this exciting hackathon opportunity!';
@@ -91,9 +79,9 @@ async function scrapeHackathonsFromPlatform(
 
         // Try to extract date patterns from content
         const datePatterns = [
-          /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/,
+          /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
           /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i,
-          /(\d{4}[/-]\d{1,2}[/-]\d{1,2})/
+          /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
         ];
 
         const content = result.markdown || result.description || '';

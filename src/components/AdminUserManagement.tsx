@@ -19,14 +19,6 @@ interface UserWithRole {
   display_name: string | null;
 }
 
-interface UserRoleJoinRow {
-  user_id: string;
-  role: 'admin' | 'moderator' | 'user';
-  profiles?: {
-    display_name: string | null;
-  } | null;
-}
-
 const AdminUserManagement = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -49,7 +41,7 @@ const AdminUserManagement = () => {
 
       if (error) throw error;
 
-      const formattedUsers = ((data || []) as UserRoleJoinRow[]).map((item) => ({
+      const formattedUsers = (data || []).map((item: any) => ({
         user_id: item.user_id,
         role: item.role as 'admin' | 'user',
         display_name: item.profiles?.display_name || 'Unknown User',
