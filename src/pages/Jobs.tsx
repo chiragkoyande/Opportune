@@ -73,6 +73,22 @@ const SALARY_OPTIONS = [
   { value: '2000000', label: '20 LPA+' },
 ];
 
+const RECENT_SEARCHES_KEY = 'opportune:recent-searches';
+
+function rememberSearch(query: string) {
+  const term = query.trim();
+  if (term.length < 3) return;
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_SEARCHES_KEY) ?? '[]');
+    const current = Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+    const next = [term, ...current.filter((item) => item.toLowerCase() !== term.toLowerCase())].slice(0, 8);
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+  } catch {
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify([term]));
+  }
+}
+
 export default function Jobs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<CareerViewMode>('grid');
@@ -98,6 +114,11 @@ export default function Jobs() {
     if (filters.location !== 'all') params.set('location', filters.location);
     setSearchParams(params, { replace: true });
   }, [filters.companyId, filters.location, filters.query, setSearchParams]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => rememberSearch(filters.query), 700);
+    return () => window.clearTimeout(timeout);
+  }, [filters.query]);
 
   useEffect(() => {
     const node = sentinelRef.current;

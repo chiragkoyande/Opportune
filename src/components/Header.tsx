@@ -23,6 +23,7 @@ const NAV_LINKS = [
   { href: '/explore', label: 'Explore' },
   { href: '/jobs', label: 'Jobs' },
   { href: '/companies', label: 'Companies' },
+  { href: '/dashboard', label: 'Dashboard' },
 ];
 
 const Header = () => {
@@ -157,6 +158,10 @@ const Header = () => {
                     <User className="h-4 w-4 text-primary" />
                     Profile
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer gap-2">
+                    <LayoutGrid className="h-4 w-4 text-primary" />
+                    Dashboard
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')} className="cursor-pointer gap-2">
                     <Heart className="h-4 w-4 text-urgent" />
                     Favorites
@@ -251,6 +256,9 @@ const Header = () => {
                   </Button>
                   <Button variant="ghost" onClick={() => navigate('/profile')} className="w-full justify-start text-sm text-muted-foreground gap-2">
                     <User className="h-4 w-4" /> Profile
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full justify-start text-sm text-muted-foreground gap-2">
+                    <LayoutGrid className="h-4 w-4" /> Dashboard
                   </Button>
                   {isAdmin && (
                     <Button variant="ghost" onClick={() => navigate('/admin')} className="w-full justify-start text-sm text-muted-foreground gap-2">

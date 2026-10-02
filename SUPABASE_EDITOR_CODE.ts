@@ -20,6 +20,27 @@ interface Opportunity {
   source: string;
 }
 
+interface KontestContest {
+  name: string;
+  site: string;
+  start_time: string;
+  duration: string;
+  url: string;
+  status: string;
+}
+
+interface FirecrawlSearchResult {
+  title?: string;
+  description?: string;
+  markdown?: string;
+  url?: string;
+}
+
+interface FirecrawlSearchResponse {
+  success?: boolean;
+  data?: FirecrawlSearchResult[];
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,12 +56,12 @@ Deno.serve(async (req) => {
       const kontestsResponse = await fetch('https://kontests.net/api/v1/all');
       
       if (kontestsResponse.ok) {
-        const contests = await kontestsResponse.json();
+        const contests = await kontestsResponse.json() as KontestContest[];
         const upcomingContests = contests
-          .filter((c: any) => c.status === 'BEFORE' || new Date(c.start_time) > new Date())
+          .filter((c) => c.status === 'BEFORE' || new Date(c.start_time) > new Date())
           .slice(0, 15);
 
-        upcomingContests.forEach((contest: any, index: number) => {
+        upcomingContests.forEach((contest, index) => {
           const siteMap: Record<string, string> = {
             'CodeForces': 'Codeforces',
             'CodeForces::Gym': 'Codeforces Gym',
@@ -110,10 +131,10 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const data = await response.json();
+          const data = await response.json() as FirecrawlSearchResponse;
 
           if (data.success && data.data && Array.isArray(data.data)) {
-            data.data.forEach((result: any, index: number) => {
+            data.data.forEach((result, index) => {
               const title = result.title || `${source} Opportunity`;
               const description = result.description || 'Exciting opportunity to participate';
               

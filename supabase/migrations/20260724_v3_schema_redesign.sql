@@ -291,19 +291,23 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
 
 ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own preferences" ON public.user_preferences;
 CREATE POLICY "Users can view their own preferences"
 ON public.user_preferences FOR SELECT
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own preferences" ON public.user_preferences;
 CREATE POLICY "Users can insert their own preferences"
 ON public.user_preferences FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own preferences" ON public.user_preferences;
 CREATE POLICY "Users can update their own preferences"
 ON public.user_preferences FOR UPDATE
 USING (auth.uid() = user_id);
 
 -- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON public.user_preferences;
 CREATE TRIGGER update_user_preferences_updated_at
   BEFORE UPDATE ON public.user_preferences
   FOR EACH ROW
@@ -326,6 +330,7 @@ CREATE TABLE IF NOT EXISTS public.ingestion_logs (
 
 ALTER TABLE public.ingestion_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can view ingestion logs" ON public.ingestion_logs;
 CREATE POLICY "Admins can view ingestion logs"
 ON public.ingestion_logs FOR SELECT
 USING (public.has_role(auth.uid(), 'admin'));
@@ -343,6 +348,7 @@ CREATE INDEX IF NOT EXISTS idx_opportunity_views_opp_id
 
 ALTER TABLE public.opportunity_views ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can insert views" ON public.opportunity_views;
 CREATE POLICY "Anyone can insert views"
 ON public.opportunity_views FOR INSERT
 WITH CHECK (true);

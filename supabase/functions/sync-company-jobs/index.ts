@@ -15,6 +15,13 @@ type AtsPlatform =
   | "jobvite"
   | "teamtailor"
   | "recruitee"
+  | "successfactors"
+  | "taleo"
+  | "icims"
+  | "personio"
+  | "comeet"
+  | "wellfound"
+  | "yc_jobs"
   | "custom";
 
 type Company = {
@@ -77,6 +84,8 @@ const syncSecret = Deno.env.get("JOB_SYNC_SECRET");
 const maxCompaniesPerRun = Number(Deno.env.get("JOB_SYNC_MAX_COMPANIES") ?? "50");
 const requestTimeoutMs = Number(Deno.env.get("JOB_SYNC_TIMEOUT_MS") ?? "20000");
 const maxRetries = Number(Deno.env.get("JOB_SYNC_MAX_RETRIES") ?? "2");
+const firecrawlApiKey = Deno.env.get("FIRECRAWL_API_KEY") ?? "";
+const firecrawlMaxJobs = Number(Deno.env.get("FIRECRAWL_MAX_JOBS") ?? "25");
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false },
@@ -291,6 +300,41 @@ function detectFromText(text: string, fallbackUrl: string | null): DetectionResu
       build: (match) => ({ platform: "jobvite", identifier: match[1], careersUrl: fallbackUrl }),
     },
     {
+      platform: "personio",
+      regex: /([a-z0-9_-]+)\.jobs\.personio\.(?:de|com)/i,
+      build: (match) => ({ platform: "personio", identifier: match[1], careersUrl: fallbackUrl }),
+    },
+    {
+      platform: "comeet",
+      regex: /(?:www\.)?comeet\.com\/jobs\/([a-z0-9_-]+)/i,
+      build: (match) => ({ platform: "comeet", identifier: match[1], careersUrl: fallbackUrl }),
+    },
+    {
+      platform: "icims",
+      regex: /([a-z0-9_-]+)\.icims\.com\/jobs/i,
+      build: (match) => ({ platform: "icims", identifier: match[1], careersUrl: fallbackUrl }),
+    },
+    {
+      platform: "successfactors",
+      regex: /career(?:\d+)?\.successfactors\.(?:com|eu)\/(?:career\?|sfcareer\/jobreqcareer\?)/i,
+      build: (match) => ({ platform: "successfactors", identifier: null, careersUrl: fallbackUrl ?? match[0] }),
+    },
+    {
+      platform: "taleo",
+      regex: /(?:taleo\.net|tbe\.taleo\.net)\/careersection/i,
+      build: (match) => ({ platform: "taleo", identifier: null, careersUrl: fallbackUrl ?? match[0] }),
+    },
+    {
+      platform: "wellfound",
+      regex: /wellfound\.com\/company\/([a-z0-9_-]+)\/jobs/i,
+      build: (match) => ({ platform: "wellfound", identifier: match[1], careersUrl: fallbackUrl }),
+    },
+    {
+      platform: "yc_jobs",
+      regex: /(?:www\.)?ycombinator\.com\/companies\/([a-z0-9_-]+)\/jobs/i,
+      build: (match) => ({ platform: "yc_jobs", identifier: match[1], careersUrl: fallbackUrl }),
+    },
+    {
       platform: "workday",
       regex: /https?:\/\/([a-z0-9_-]+)\.(?:wd\d\.)?myworkdayjobs\.com\/(?:[^"'\s/]+\/)?([a-z0-9_-]+)/i,
       build: (match) => ({
@@ -322,10 +366,16 @@ async function detectCompany(company: Company): Promise<DetectionResult> {
 
   const baseWebsite = normalizeUrl(company.website_url);
   const domain = company.domain || domainFromUrl(baseWebsite);
+  const base = baseWebsite.replace(/\/$/, "");
   const candidates = Array.from(new Set([
     company.careers_url,
-    `${baseWebsite.replace(/\/$/, "")}/careers`,
-    `${baseWebsite.replace(/\/$/, "")}/jobs`,
+    `${base}/careers`,
+    `${base}/jobs`,
+    `${base}/join-us`,
+    `${base}/work-with-us`,
+    `${base}/careers/jobs`,
+    `${base}/careers/openings`,
+    `${base}/company/careers`,
     `https://careers.${domain}`,
     `https://jobs.${domain}`,
   ].filter((value): value is string => Boolean(value))));
@@ -524,6 +574,57 @@ async function fetchRecruitee(identifier: string): Promise<NormalizedJob[]> {
   })));
 }
 
+async function fetchPersonio(identifier: string): Promise<NormalizedJob[]> {
+  type ResponseBody = { jobs?: Array<Record<string, unknown>> };
+  const data = await fetchJson<ResponseBody>(`https://${identifier}.jobs.personio.com/search.json`);
+
+  return await Promise.all((data.jobs ?? []).map((job) => buildJob("personio", job, {
+    external_id: String(job.id ?? job.job_id ?? job.slug),
+    title: String(job.name ?? job.title ?? "Untitled role"),
+    description: compactText(job.description),
+    department: compactText(job.department),
+    team: null,
+    location: compactText(job.office),
+    country: compactText(job.country),
+    city: compactText(job.city),
+    employment_type: compactText(job.employment_type),
+    workplace_type: compactText(job.schedule),
+    seniority: compactText(job.seniority),
+    apply_url: String(job.url ?? `https://${identifier}.jobs.personio.com/job/${String(job.id ?? "")}`),
+    source_url: String(job.url ?? ""),
+    posted_at: parseDate(job.published_at ?? job.created_at),
+    closes_at: null,
+  })));
+}
+
+async function fetchComeet(identifier: string): Promise<NormalizedJob[]> {
+  type ResponseBody = { positions?: Array<Record<string, unknown>> };
+  const data = await fetchJson<ResponseBody>(
+    `https://www.comeet.com/careers-api/2.0/company/${identifier}/positions?details=true`,
+  );
+
+  return await Promise.all((data.positions ?? []).map((job) => {
+    const location = job.location as Record<string, unknown> | undefined;
+    return buildJob("comeet", job, {
+      external_id: String(job.uid ?? job.id),
+      title: String(job.name ?? job.title ?? "Untitled role"),
+      description: compactText(job.description),
+      department: compactText(job.department),
+      team: null,
+      location: compactText(job.location) ?? compactText(location?.name),
+      country: compactText(location?.country),
+      city: compactText(location?.city),
+      employment_type: compactText(job.employment_type),
+      workplace_type: null,
+      seniority: null,
+      apply_url: String(job.url_comeet_hosted_page ?? job.url_active_page ?? ""),
+      source_url: String(job.url_comeet_hosted_page ?? job.url_active_page ?? ""),
+      posted_at: parseDate(job.time_updated ?? job.created_at),
+      closes_at: null,
+    });
+  }));
+}
+
 async function fetchCustom(
   company: Company,
   detection: DetectionResult,
@@ -565,6 +666,168 @@ async function fetchCustom(
       posted_at: parseDate(job.posted_at ?? job.created_at),
       closes_at: parseDate(job.closes_at),
     })));
+}
+
+type FirecrawlPage = {
+  success?: boolean;
+  data?: {
+    html?: string;
+    markdown?: string;
+    metadata?: Record<string, unknown>;
+  };
+};
+
+async function fetchFirecrawlPage(url: string): Promise<FirecrawlPage> {
+  if (!firecrawlApiKey) {
+    throw new SyncError("FIRECRAWL_API_KEY is not configured", "firecrawl", { url });
+  }
+
+  return await withRetries(async () => {
+    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${firecrawlApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url,
+        formats: ["html", "markdown"],
+        onlyMainContent: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new SyncError(`Firecrawl returned HTTP ${response.status}`, "firecrawl", {
+        url,
+        status: response.status,
+      });
+    }
+
+    return await response.json() as FirecrawlPage;
+  });
+}
+
+function jsonLdJobPostings(html: string): Array<Record<string, unknown>> {
+  const jobs: Array<Record<string, unknown>> = [];
+  const scripts = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) ?? [];
+
+  for (const script of scripts) {
+    const content = script.replace(/<script[^>]*>/i, "").replace(/<\/script>\s*$/i, "").trim();
+    try {
+      const parsed = JSON.parse(content) as unknown;
+      const candidates = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === "object" && Array.isArray((parsed as Record<string, unknown>)["@graph"])
+        ? (parsed as Record<string, unknown>)["@graph"]
+        : [parsed];
+
+      for (const candidate of candidates) {
+        if (!candidate || typeof candidate !== "object") continue;
+        const record = candidate as Record<string, unknown>;
+        const type = record["@type"];
+        const types = Array.isArray(type) ? type : [type];
+        if (types.some((value) => value === "JobPosting")) jobs.push(record);
+      }
+    } catch {
+      // Ignore malformed JSON-LD blocks and continue with other page data.
+    }
+  }
+
+  return jobs;
+}
+
+function firecrawlJobLinks(html: string, pageUrl: string): string[] {
+  const links = new Set<string>();
+  const pattern = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(html)) !== null && links.size < firecrawlMaxJobs) {
+    const label = compactText(match[2])?.toLowerCase() ?? "";
+    if (!/(job|career|intern|engineer|developer|analyst|manager|designer|data|software)/i.test(`${label} ${match[1]}`)) continue;
+
+    try {
+      const link = new URL(match[1], pageUrl);
+      if (link.protocol === "http:" || link.protocol === "https:") links.add(link.toString());
+    } catch {
+      // Ignore invalid links.
+    }
+  }
+
+  return Array.from(links);
+}
+
+function firecrawlLocation(value: unknown): { location: string | null; country: string | null; city: string | null } {
+  const locations = Array.isArray(value) ? value : [value];
+  const first = locations.find((item) => item && typeof item === "object") as Record<string, unknown> | undefined;
+  const address = first?.address as Record<string, unknown> | undefined;
+  const city = compactText(address?.addressLocality);
+  const country = compactText(address?.addressCountry);
+  return {
+    location: compactText(first?.name) ?? ([city, country].filter(Boolean).join(", ") || null),
+    country,
+    city,
+  };
+}
+
+async function firecrawlJobsFromPage(
+  pageUrl: string,
+  page: FirecrawlPage,
+): Promise<NormalizedJob[]> {
+  const html = page.data?.html ?? "";
+  const jobs = jsonLdJobPostings(html);
+  return await Promise.all(jobs.map((job) => {
+    const location = firecrawlLocation(job.jobLocation);
+    const applyUrl = String(job.url ?? pageUrl);
+    return buildJob("custom", job, {
+      external_id: String((job.identifier as Record<string, unknown> | undefined)?.value ?? applyUrl),
+      title: String(job.title ?? "Untitled role"),
+      description: compactText(job.description),
+      department: compactText(job.department),
+      team: null,
+      location: location.location,
+      country: location.country,
+      city: location.city,
+      employment_type: compactText(job.employmentType),
+      workplace_type: null,
+      seniority: null,
+      apply_url: applyUrl,
+      source_url: pageUrl,
+      posted_at: parseDate(job.datePosted),
+      closes_at: parseDate(job.validThrough),
+    });
+  }));
+}
+
+async function fetchFirecrawlFallback(company: Company, detection: DetectionResult): Promise<NormalizedJob[]> {
+  if (!firecrawlApiKey) {
+    throw new SyncError("No structured job source found and FIRECRAWL_API_KEY is not configured", "firecrawl", {
+      company: company.name,
+      careersUrl: detection.careersUrl,
+    });
+  }
+
+  const pageUrl = detection.careersUrl ?? company.website_url;
+  const landingPage = await fetchFirecrawlPage(pageUrl);
+  const detailPages = await Promise.all(firecrawlJobLinks(landingPage.data?.html ?? "", pageUrl)
+    .slice(0, firecrawlMaxJobs)
+    .map(async (url) => {
+      try {
+        return { url, page: await fetchFirecrawlPage(url) };
+      } catch (error) {
+        console.log(`Firecrawl skipped job page for ${company.name}:`, url, String(error));
+        return null;
+      }
+    }));
+  const pages = [
+    { url: pageUrl, page: landingPage },
+    ...detailPages.filter((page): page is { url: string; page: FirecrawlPage } => page !== null),
+  ];
+
+  const jobs = (await Promise.all(pages.map(({ url, page }) => firecrawlJobsFromPage(url, page))))
+    .flat()
+    .filter((job) => job.title !== "Untitled role" && job.apply_url);
+
+  return jobs;
 }
 
 async function fetchWorkday(identifier: string, metadata: Record<string, unknown>): Promise<NormalizedJob[]> {
@@ -614,32 +877,48 @@ async function fetchWorkday(identifier: string, metadata: Record<string, unknown
 }
 
 async function fetchJobsForCompany(company: Company, detection: DetectionResult): Promise<NormalizedJob[]> {
-  if (!detection.identifier && detection.platform !== "custom") {
-    throw new SyncError("Detected ATS platform without an account identifier", "detect", { detection });
+  try {
+    if (!detection.identifier && detection.platform !== "custom") {
+      throw new SyncError("Detected ATS platform without an account identifier", "detect", { detection });
+    }
+
+    switch (detection.platform) {
+      case "greenhouse":
+        return await fetchGreenhouse(detection.identifier ?? "");
+      case "lever":
+        return await fetchLever(detection.identifier ?? "");
+      case "workday":
+        return await fetchWorkday(detection.identifier ?? "", detection.metadata ?? company.ats_metadata);
+      case "ashby":
+        return await fetchAshby(detection.identifier ?? "");
+      case "smartrecruiters":
+        return await fetchSmartRecruiters(detection.identifier ?? "");
+      case "bamboohr":
+        return await fetchBambooHr(detection.identifier ?? "");
+      case "teamtailor":
+        return await fetchTeamtailor(detection.identifier ?? "");
+      case "recruitee":
+        return await fetchRecruitee(detection.identifier ?? "");
+      case "personio":
+        return await fetchPersonio(detection.identifier ?? "");
+      case "comeet":
+        return await fetchComeet(detection.identifier ?? "");
+      case "jobvite":
+        return await fetchCustom(company, detection, "jobvite");
+      case "successfactors":
+      case "taleo":
+      case "icims":
+      case "wellfound":
+      case "yc_jobs":
+        return await fetchCustom(company, detection, detection.platform);
+      case "custom":
+        return await fetchCustom(company, detection);
+    }
+  } catch (error) {
+    console.log(`Structured source failed for ${company.name}; trying Firecrawl fallback`, String(error));
   }
 
-  switch (detection.platform) {
-    case "greenhouse":
-      return await fetchGreenhouse(detection.identifier ?? "");
-    case "lever":
-      return await fetchLever(detection.identifier ?? "");
-    case "workday":
-      return await fetchWorkday(detection.identifier ?? "", detection.metadata ?? company.ats_metadata);
-    case "ashby":
-      return await fetchAshby(detection.identifier ?? "");
-    case "smartrecruiters":
-      return await fetchSmartRecruiters(detection.identifier ?? "");
-    case "bamboohr":
-      return await fetchBambooHr(detection.identifier ?? "");
-    case "teamtailor":
-      return await fetchTeamtailor(detection.identifier ?? "");
-    case "recruitee":
-      return await fetchRecruitee(detection.identifier ?? "");
-    case "jobvite":
-      return await fetchCustom(company, detection, "jobvite");
-    case "custom":
-      return await fetchCustom(company, detection);
-  }
+  return await fetchFirecrawlFallback(company, detection);
 }
 
 async function logCompanyError(

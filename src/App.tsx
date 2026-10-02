@@ -16,6 +16,7 @@ const Jobs = lazy(() => import("./pages/Jobs"));
 const JobDetails = lazy(() => import("./pages/JobDetails"));
 const Companies = lazy(() => import("./pages/Companies"));
 const CompanyProfile = lazy(() => import("./pages/CompanyProfile"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/jobs/:id" element={<JobDetails />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:slug" element={<CompanyProfile />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/profile" element={<Profile />} />

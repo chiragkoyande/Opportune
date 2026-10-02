@@ -16,6 +16,10 @@ export interface Company {
   ats_platform: string | null;
   sync_status: string;
   tags: string[];
+  logo_url: string | null;
+  industry: string | null;
+  headquarters: string | null;
+  hiring_status: string;
   last_successful_sync_at: string | null;
 }
 
@@ -90,6 +94,7 @@ export const POPULAR_SKILLS = [
 ];
 
 export function getCompanyLogoUrl(company: Company | null): string | null {
+  if (company?.logo_url) return company.logo_url;
   if (!company?.domain) return null;
   return `https://logo.clearbit.com/${company.domain}`;
 }
